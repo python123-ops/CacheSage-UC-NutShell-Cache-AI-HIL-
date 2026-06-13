@@ -1,74 +1,47 @@
 {
   "passed": false,
   "seed": 11,
-  "transaction_count": 48,
+  "transaction_count": 4,
   "covered_points": [
-    "cp_boundary_address",
     "cp_clean_eviction",
     "cp_dirty_eviction",
-    "cp_long_random",
-    "cp_read_hit",
+    "cp_full_line_mask",
+    "cp_read_after_write",
     "cp_read_miss_refill",
+    "cp_refill_after_dirty_evict",
     "cp_refill_alignment",
     "cp_replacement_rotation",
-    "cp_write_hit_mask",
+    "cp_same_set_pressure",
     "cp_write_miss_allocate"
   ],
   "coverage": {
-    "total": 12,
+    "total": 23,
     "covered": 10,
-    "percent": 83.33
+    "percent": 43.48
   },
   "failures": [
     {
-      "index": 48,
+      "index": 4,
       "tag": "final-memory",
-      "message": "memory mismatch at 0x0: expected 0x01EF92E9, observed 0x00000000"
+      "message": "memory mismatch at 0x0: expected 0xDEADBEEF, observed 0x00000000"
     },
     {
-      "index": 5,
-      "tag": "dirty-readback",
-      "message": "data mismatch at 0x0: expected 16960733, observed 0"
+      "index": 3,
+      "tag": "victim-readback",
+      "message": "data mismatch at 0x0: expected 3735928559, observed 0"
     },
     {
-      "index": 12,
-      "tag": "rand-r12",
-      "message": "data mismatch at 0x70: expected 2313671007, observed 0"
-    },
-    {
-      "index": 16,
-      "tag": "rand-r16",
-      "message": "data mismatch at 0x0: expected 16945701, observed 37413"
-    },
-    {
-      "index": 30,
-      "tag": "rand-r30",
-      "message": "data mismatch at 0x0: expected 24613391, observed 7798799"
-    },
-    {
-      "index": 33,
-      "tag": "rand-r33",
-      "message": "data mismatch at 0xA0: expected 3040059969, observed 0"
-    },
-    {
-      "index": 38,
-      "tag": "rand-r38",
-      "message": "data mismatch at 0x90: expected 255770067, observed 0"
-    },
-    {
-      "index": 42,
-      "tag": "rand-r42",
-      "message": "data mismatch at 0x30: expected 4285923328, observed 0"
+      "index": 2,
+      "tag": "same-set-fill-b",
+      "message": "event sequence mismatch: expected [('miss', 64, ''), ('eviction', 0, 'dirty'), ('dirty_eviction', 0, ''), ('writeback', 0, ''), ('refill', 64, ''), ('read', 64, 'same-set-fill-b')], observed [('miss', 64, ''), ('eviction', 0, 'dirty'), ('dirty_eviction', 0, ''), ('refill', 64, ''), ('read', 64, 'same-set-fill-b')]"
     }
   ],
   "event_counts": {
-    "miss": 31,
-    "refill": 31,
-    "write": 31,
-    "hit": 17,
-    "masked_write": 21,
-    "read": 17,
-    "eviction": 27,
-    "dirty_eviction": 21
+    "miss": 4,
+    "refill": 4,
+    "write": 1,
+    "read": 3,
+    "eviction": 2,
+    "dirty_eviction": 1
   }
 }

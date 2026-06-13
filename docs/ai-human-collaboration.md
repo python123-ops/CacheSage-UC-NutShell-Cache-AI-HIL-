@@ -11,6 +11,8 @@ generator. The review trail below is part of the submission evidence.
 - Any generated code that touches the scoreboard must be reviewed against a
   concrete transaction trace.
 - Reports separate planned coverage from measured regression coverage.
+- Machine-readable review records live in `ai_hil_log.jsonl`, with the
+  human-facing catalog summarized in `docs/ai-defect-catalog.md`.
 
 ## Early Intervention Table
 
@@ -21,6 +23,7 @@ generator. The review trail below is part of the submission evidence.
 | CRV constraints | Uniform random addresses were used for all streams. | Added same-set bias and retained a small full-range stream. | Replacement pressure is unlikely under naive randomness. |
 | Failure triage | Prompt asked AI to directly fix any mismatch. | Human first classifies scoreboard bug, DUT bug, or stimulus bug. | Blind fixing hides the root cause and weakens report credibility. |
 | Report wording | Generated text implied RTL coverage was already measured. | Reworded to planned coverage until the regression artifacts exist. | The competition rewards evidence, not inflated phrasing. |
+| Upstream adapter | Generated wrapper assumed the RTL shape without checking the example project. | Locked Example-NutShellCache and added a layout inspector before the smoke step. | Real integration work starts from the upstream flow, not from an invented interface. |
 
 ## Prompt Pattern
 

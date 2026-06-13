@@ -117,6 +117,17 @@ def build_default_bundle() -> EvidenceBundle:
         CoveragePoint("cp_reset_recovery", "Reset clears transient state before new traffic"),
         CoveragePoint("cp_boundary_address", "Boundary addresses do not alias adjacent cache lines"),
         CoveragePoint("cp_long_random", "Long random stream agrees with the reference memory model"),
+        CoveragePoint("cp_same_set_pressure", "Same-set conflict traffic drives replacement pressure"),
+        CoveragePoint("cp_partial_mask_low", "Low byte-mask writes preserve unselected high bytes"),
+        CoveragePoint("cp_partial_mask_high", "High byte-mask writes preserve unselected low bytes"),
+        CoveragePoint("cp_alternating_read_write", "Alternating read/write stream keeps ordering stable"),
+        CoveragePoint("cp_full_line_mask", "Full-line word writes remain compatible with masked stores"),
+        CoveragePoint("cp_multi_set_traffic", "Traffic spans more than one cache set"),
+        CoveragePoint("cp_writeback_observed", "Dirty victim writeback is observed by the monitor"),
+        CoveragePoint("cp_read_after_write", "Read-after-write returns the most recent selected bytes"),
+        CoveragePoint("cp_offset_word_access", "Non-zero word offsets within a line are exercised"),
+        CoveragePoint("cp_mask_mix", "Regression includes multiple byte-mask shapes"),
+        CoveragePoint("cp_refill_after_dirty_evict", "Refill after dirty eviction keeps event order intact"),
     ]
     scenarios = [
         Scenario(
@@ -124,7 +135,7 @@ def build_default_bundle() -> EvidenceBundle:
             "Read/write smoke path",
             "Prove the Python driver, monitor, and scoreboard can close a simple cache transaction loop.",
             "Directed loads and stores to one cache line, checked against the reference memory model.",
-            ["cp_read_hit", "cp_write_hit_mask"],
+            ["cp_read_hit", "cp_write_hit_mask", "cp_read_after_write"],
         ),
         Scenario(
             "S02",
@@ -138,14 +149,14 @@ def build_default_bundle() -> EvidenceBundle:
             "Write miss allocate",
             "Check write-allocate behavior and byte mask preservation after a miss.",
             "Masked stores to cold lines followed by reads that expose unintended byte corruption.",
-            ["cp_write_miss_allocate", "cp_write_hit_mask"],
+            ["cp_write_miss_allocate", "cp_write_hit_mask", "cp_mask_mix"],
         ),
         Scenario(
             "S04",
             "Dirty eviction integrity",
             "Catch victim writeback loss before a replacement installs the new line.",
             "Fill a set, dirty the victim, force replacement, then read the evicted address through memory.",
-            ["cp_dirty_eviction", "cp_replacement_rotation"],
+            ["cp_dirty_eviction", "cp_writeback_observed", "cp_refill_after_dirty_evict"],
         ),
         Scenario(
             "S05",
@@ -159,7 +170,7 @@ def build_default_bundle() -> EvidenceBundle:
             "Replacement stress",
             "Stress set conflicts until replacement policy state errors become visible.",
             "Constrained random addresses pinned to the same set, with seed replay for failures.",
-            ["cp_replacement_rotation", "cp_long_random"],
+            ["cp_replacement_rotation", "cp_same_set_pressure", "cp_long_random"],
         ),
         Scenario(
             "S07",
@@ -180,14 +191,28 @@ def build_default_bundle() -> EvidenceBundle:
             "Boundary address aliasing",
             "Defend against line-offset and tag slicing mistakes at boundary addresses.",
             "Neighboring line accesses with alternating masks and post-check reads.",
-            ["cp_boundary_address", "cp_write_hit_mask"],
+            ["cp_boundary_address", "cp_offset_word_access", "cp_write_hit_mask"],
         ),
         Scenario(
             "S10",
             "Long random regression",
             "Let coverage holes and scoreboard mismatches drive the next UCAgent prompt round.",
             "Seeded CRV stream with address distribution, read/write ratio, and stall knobs.",
-            ["cp_long_random", "cp_dirty_eviction", "cp_stall_hold"],
+            ["cp_long_random", "cp_dirty_eviction", "cp_stall_hold", "cp_multi_set_traffic"],
+        ),
+        Scenario(
+            "S11",
+            "Mask and offset matrix",
+            "Expose byte-lane mistakes that full-word traffic can hide.",
+            "Low-mask, high-mask, full-mask, and non-zero word-offset stores with immediate readbacks.",
+            ["cp_partial_mask_low", "cp_partial_mask_high", "cp_full_line_mask", "cp_mask_mix"],
+        ),
+        Scenario(
+            "S12",
+            "Event-level replacement audit",
+            "Catch replacement-state drift even when architectural read data still matches.",
+            "Compare monitor event signatures for eviction address, writeback, refill, and stall metadata.",
+            ["cp_same_set_pressure", "cp_writeback_observed", "cp_refill_after_dirty_evict"],
         ),
     ]
     interventions = [
@@ -218,16 +243,16 @@ def build_default_bundle() -> EvidenceBundle:
         Intervention(
             "Report hygiene",
             "The AI-generated report phrased planned coverage as completed coverage.",
-            "Reworded the initial report to separate planned coverpoints from RTL-measured results.",
+            "Reworded the report to separate planned coverpoints, Python harness data, and RTL-measured results.",
             "Competition reports should be ambitious, but the evidence must stay audit-friendly.",
         ),
     ]
     faults = [
-        "Replacement state does not advance after a refill",
-        "Dirty bit is cleared before victim writeback is accepted",
-        "Refill beat index is shifted by one word",
-        "Write mask is ignored on store hit",
-        "Request metadata changes while downstream ready is low",
+        "drop_dirty_writeback: dirty victim data is not written back before replacement",
+        "ignore_write_mask: byte mask is ignored on store hit",
+        "stuck_replacement: replacement pointer does not advance after eviction",
+        "refill_shift: refill beat index is shifted by one word",
+        "unstable_under_stall: request metadata/data changes while downstream ready is low",
     ]
     return EvidenceBundle(
         plan=VerificationPlan(
@@ -245,46 +270,40 @@ def render_markdown_report(bundle: EvidenceBundle) -> str:
     from .verification import (
         FaultMode,
         VerificationRunner,
-        build_directed_eviction_sequence,
+        build_fault_sequence,
         build_seeded_random_sequence,
     )
 
     summary = bundle.coverage_summary()
-    smoke_result = VerificationRunner().run(
-        build_seeded_random_sequence(seed=11, count=48),
-        seed=11,
-    )
-    fault_result = VerificationRunner().run(
-        build_directed_eviction_sequence(),
-        fault=FaultMode.DROP_DIRTY_WRITEBACK,
-    )
+    runner = VerificationRunner()
+    smoke_result = runner.run(build_seeded_random_sequence(seed=11, count=96), seed=11)
+    fault_results = {
+        fault: runner.run(build_fault_sequence(fault), fault=fault)
+        for fault in FaultMode
+        if fault is not FaultMode.NONE
+    }
+
     lines = [
-        "# CacheSage-UC Initial Verification Report",
+        "# CacheSage-UC Verification Evidence Report",
         "",
-        "This report is the initial evidence package for the UCAgent NutShell Cache track. "
-        "It records the verification intent, executable Python harness results, AI-human review trail, "
-        "and fault-injection targets before the RTL Picker/Toffee binding is attached.",
+        "This evidence package records the current CacheSage-UC state for the UCAgent NutShell Cache track. "
+        "It separates planned verification intent, Python harness measurement, and the pending RTL/Toffee measurement gate.",
         "",
-        "## Verification Scope",
+        "## Evidence Boundary",
         "",
-        f"- DUT: {bundle.plan.dut}",
-        f"- Scenarios: {len(bundle.plan.scenarios)}",
-        f"- Coverage points tracked: {summary.covered}/{summary.total} ({summary.percent:.2f}%)",
-        f"- Executable harness smoke run: {'PASS' if smoke_result.passed else 'FAIL'}, "
-        f"{smoke_result.coverage.covered}/{smoke_result.coverage.total} planned coverpoints "
-        f"({smoke_result.coverage.percent:.2f}%).",
-        "- Current status: the Python verification core is runnable; RTL-measured coverage is reported separately once Picker/Toffee runs are wired in.",
+        "| Evidence bucket | Status | Data now reported |",
+        "| --- | --- | --- |",
+        f"| Planned functional coverage | Defined | {summary.total} coverpoints across {len(bundle.plan.scenarios)} scenarios |",
+        f"| Python harness measured coverage | Measured | {smoke_result.coverage.covered}/{smoke_result.coverage.total} ({smoke_result.coverage.percent:.2f}%) on seed 11, 96 transactions |",
+        "| RTL/Toffee measured coverage | Pending | Reported only after Picker-generated DUT and Toffee smoke are installed locally |",
         "",
         "## Executable Harness Snapshot",
         "",
         "| Command | Result | Evidence |",
         "| --- | --- | --- |",
-        "| `python -m cachesage_uc.cli run --seed 11 --count 48 --output reports/sample-run-seed11.json` | "
+        "| `python -m cachesage_uc.cli run --seed 11 --count 96 --output reports/sample-run-seed11.json` | "
         f"{'PASS' if smoke_result.passed else 'FAIL'} | "
-        f"{smoke_result.transaction_count} transactions, {smoke_result.coverage.percent:.2f}% planned coverpoints |",
-        "| `python -m cachesage_uc.cli run --seed 11 --count 48 --fault drop_dirty_writeback --output reports/fault-drop-dirty-writeback.json` | "
-        f"{'FAIL as expected' if not fault_result.passed else 'UNEXPECTED PASS'} | "
-        "Scoreboard detects dirty victim writeback loss |",
+        f"{smoke_result.transaction_count} transactions, {smoke_result.coverage.percent:.2f}% measured coverpoints |",
         "",
         "## Scenario Matrix",
         "",
@@ -298,24 +317,31 @@ def render_markdown_report(bundle: EvidenceBundle) -> str:
     lines.extend(
         [
             "",
-            "## AI 缺陷与人工修正对比表",
+            "## AI 盲区与人工修正对比表",
             "",
             "| Stage | AI output | Human correction | Lesson |",
             "| --- | --- | --- | --- |",
         ]
     )
     for item in bundle.interventions:
-        lines.append(
-            f"| {item.stage} | {item.ai_output} | {item.human_action} | {item.lesson} |"
-        )
+        lines.append(f"| {item.stage} | {item.ai_output} | {item.human_action} | {item.lesson} |")
 
     lines.extend(
         [
             "",
             "## 故障注入",
             "",
+            "| Fault mode | Result | First failure summary |",
+            "| --- | --- | --- |",
         ]
     )
+    for fault, result in fault_results.items():
+        first_failure = result.failures[0].message if result.failures else "no failure"
+        lines.append(
+            f"| `{fault.value}` | {'FAIL as expected' if not result.passed else 'UNEXPECTED PASS'} | {first_failure} |"
+        )
+
+    lines.extend(["", "## Fault Model Catalog", ""])
     for fault in bundle.fault_injection:
         lines.append(f"- {fault}")
 
@@ -324,9 +350,10 @@ def render_markdown_report(bundle: EvidenceBundle) -> str:
             "",
             "## Next Regression Gate",
             "",
-            "The next gate is to connect these scenarios to the Picker-generated Python DUT, "
-            "run the Toffee environment with deterministic seeds, and replace the harness-only "
-            "coverage with RTL-measured functional coverage plus waveform-backed failure artifacts.",
+            "Connect these scenarios to the Picker-generated Python DUT, run the Toffee environment "
+            "with deterministic seeds, and add RTL-measured functional coverage plus waveform-backed "
+            "failure artifacts. Until that gate runs, this report deliberately avoids claiming real "
+            "NutShell RTL bugs.",
             "",
         ]
     )

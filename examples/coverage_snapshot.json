@@ -1,28 +1,36 @@
 {
   "title": "CacheSage-UC NutShell Cache Verification Plan",
   "dut": "NutShell Cache",
-  "coverage_summary": {
-    "total": 12,
-    "covered": 10,
-    "percent": 83.33,
-    "note": "Measured by the executable Python harness with seed 11 and 48 transactions. Replace with RTL functional coverage after Picker/Toffee regression runs."
+  "python_harness_coverage": {
+    "seed": 11,
+    "transaction_count": 96,
+    "total": 23,
+    "covered": 23,
+    "percent": 100.0,
+    "note": "Measured by the executable Python harness. RTL/Toffee measured coverage is recorded separately after Picker-generated DUT runs."
   },
   "priority_coverpoints": [
     "cp_dirty_eviction",
     "cp_replacement_rotation",
     "cp_refill_alignment",
     "cp_stall_hold",
-    "cp_long_random"
+    "cp_same_set_pressure",
+    "cp_mask_mix",
+    "cp_refill_after_dirty_evict"
   ],
   "fault_injection_targets": [
-    "replacement state does not advance after refill",
-    "dirty bit clears before victim writeback is accepted",
-    "refill beat index is shifted by one word",
-    "write mask is ignored on store hit",
-    "request metadata changes while downstream ready is low"
+    "drop_dirty_writeback",
+    "ignore_write_mask",
+    "stuck_replacement",
+    "refill_shift",
+    "unstable_under_stall"
   ],
   "evidence_files": [
     "reports/sample-run-seed11.json",
-    "reports/fault-drop-dirty-writeback.json"
+    "reports/fault-drop-dirty-writeback.json",
+    "reports/fault-ignore-write-mask.json",
+    "reports/fault-stuck-replacement.json",
+    "reports/fault-refill-shift.json",
+    "reports/fault-unstable-under-stall.json"
   ]
 }

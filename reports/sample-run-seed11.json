@@ -1,34 +1,49 @@
 {
   "passed": true,
   "seed": 11,
-  "transaction_count": 48,
+  "transaction_count": 96,
   "covered_points": [
+    "cp_alternating_read_write",
     "cp_boundary_address",
     "cp_clean_eviction",
     "cp_dirty_eviction",
+    "cp_full_line_mask",
     "cp_long_random",
+    "cp_mask_mix",
+    "cp_multi_set_traffic",
+    "cp_offset_word_access",
+    "cp_partial_mask_high",
+    "cp_partial_mask_low",
+    "cp_read_after_write",
     "cp_read_hit",
     "cp_read_miss_refill",
+    "cp_refill_after_dirty_evict",
     "cp_refill_alignment",
     "cp_replacement_rotation",
+    "cp_reset_recovery",
+    "cp_same_set_pressure",
+    "cp_stall_hold",
     "cp_write_hit_mask",
-    "cp_write_miss_allocate"
+    "cp_write_miss_allocate",
+    "cp_writeback_observed"
   ],
   "coverage": {
-    "total": 12,
-    "covered": 10,
-    "percent": 83.33
+    "total": 23,
+    "covered": 23,
+    "percent": 100.0
   },
   "failures": [],
   "event_counts": {
-    "miss": 31,
-    "refill": 31,
-    "write": 31,
-    "hit": 17,
-    "masked_write": 21,
-    "read": 17,
-    "eviction": 27,
-    "dirty_eviction": 21,
-    "writeback": 21
+    "miss": 55,
+    "refill": 55,
+    "write": 46,
+    "hit": 41,
+    "read": 50,
+    "masked_write": 24,
+    "eviction": 51,
+    "dirty_eviction": 33,
+    "writeback": 33,
+    "stall_hold": 2,
+    "reset_window": 1
   }
 }

@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -33,14 +34,9 @@ class CliTests(unittest.TestCase):
         payload = json.loads(result.stdout)
         self.assertEqual(payload["title"], "CacheSage-UC NutShell Cache Verification Plan")
         self.assertGreaterEqual(len(payload["scenarios"]), 8)
-        self.assertTrue(
-            any("dirty eviction" in item["name"].lower() for item in payload["scenarios"])
-        )
-
+        self.assertTrue(any("dirty eviction" in item["name"].lower() for item in payload["scenarios"]))
 
     def test_report_command_writes_markdown_file(self):
-        import tempfile
-
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "report.md"
             result = run_cli("report", "--output", str(output))
@@ -48,9 +44,31 @@ class CliTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("wrote", result.stdout.lower())
             text = output.read_text(encoding="utf-8")
-            self.assertIn("CacheSage-UC Initial Verification Report", text)
-            self.assertIn("AI 缺陷与人工修正对比表", text)
-            self.assertNotIn("缂", text)
+            self.assertIn("CacheSage-UC Verification Evidence Report", text)
+            self.assertIn("AI 盲区与人工修正对比表", text)
+            self.assertIn("故障注入", text)
+            self.assertNotIn("缂?", text)
+            self.assertNotIn("閺?", text)
+
+    def test_fault_run_uses_deterministic_detecting_sequence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "fault.json"
+            result = run_cli(
+                "run",
+                "--seed",
+                "11",
+                "--count",
+                "16",
+                "--fault",
+                "refill_shift",
+                "--output",
+                str(output),
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(output.read_text(encoding="utf-8"))
+            self.assertFalse(payload["passed"])
+            self.assertTrue(any("data mismatch" in item["message"].lower() for item in payload["failures"]))
 
 
 if __name__ == "__main__":

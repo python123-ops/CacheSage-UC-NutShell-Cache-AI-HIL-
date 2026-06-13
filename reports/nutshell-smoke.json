@@ -1,0 +1,17 @@
+{
+  "status": "missing_upstream",
+  "layout": {
+    "root": "C:\\Users\\px830\\Documents\\UC Agent\\third_party\\Example-NutShellCache",
+    "ready": false,
+    "present_paths": [],
+    "missing_paths": [
+      "Makefile",
+      "rtl",
+      "src",
+      "test"
+    ],
+    "make_targets": {},
+    "hint": "Run scripts/fetch_upstream_example.py --lock upstream.lock.json --dest third_party/Example-NutShellCache before launching the Picker/Toffee smoke flow."
+  },
+  "next_command": "python scripts/fetch_upstream_example.py --lock upstream.lock.json --dest third_party/Example-NutShellCache"
+}

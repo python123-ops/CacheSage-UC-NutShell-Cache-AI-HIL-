@@ -1,31 +1,32 @@
 # Fault-Injection Plan
 
 Fault injection is included to prove the verification environment can catch
-realistic cache bugs. These injections are testbench validation tools, not claims
-about existing NutShell defects.
+realistic cache mistakes. These injections validate the testbench; they are not
+claims about existing NutShell defects.
 
-| Fault ID | Injected behavior | Expected detector | Useful scenario |
+| Fault mode | Injected behavior | Expected detector | Deterministic entry |
 | --- | --- | --- | --- |
-| F01 | Replacement state does not advance after refill. | Coverage and scoreboard observe repeated victim choice under same-set pressure. | S06 |
-| F02 | Dirty bit clears before victim writeback is accepted. | Scoreboard requires writeback event before replacement completes. | S04 |
-| F03 | Refill beat index is shifted by one word. | Reference model readback detects line-lane mismatch. | S02 |
-| F04 | Write mask is ignored on store hit. | Byte-lane readback shows untouched bytes changed. | S03 |
-| F05 | Request metadata changes while ready is low. | Monitor assertion catches unstable address, mask, or command. | S07 |
+| `drop_dirty_writeback` | Dirty victim data is not written back before replacement. | Final memory mismatch plus missing writeback event. | `build_fault_sequence(FaultMode.DROP_DIRTY_WRITEBACK)` |
+| `ignore_write_mask` | Store hit ignores byte mask and overwrites all lanes. | Readback data mismatch on untouched bytes. | `build_fault_sequence(FaultMode.IGNORE_WRITE_MASK)` |
+| `stuck_replacement` | Replacement pointer does not advance under same-set pressure. | Event-level scoreboard sees wrong eviction address. | `build_fault_sequence(FaultMode.STUCK_REPLACEMENT)` |
+| `refill_shift` | Refill data is shifted by one word. | Readback data mismatch after dirty line is evicted and refilled. | `build_fault_sequence(FaultMode.REFILL_SHIFT)` |
+| `unstable_under_stall` | Data mutates while a stall-tagged request is held. | Readback data mismatch and `unstable_under_stall` event. | `build_fault_sequence(FaultMode.UNSTABLE_UNDER_STALL)` |
 
 ## Acceptance Rule
 
-Each injected fault should have at least one deterministic seed that fails for
+Each injected fault must have at least one deterministic sequence that fails for
 the intended reason. A useful failure artifact contains:
 
-- seed and scenario ID;
+- fault mode and deterministic seed or directed sequence name;
 - transaction trace summary;
-- scoreboard assertion or monitor assertion;
-- waveform pointer when available;
+- first scoreboard or monitor failure;
+- coverage points touched by the failure path;
 - short human diagnosis before asking UCAgent for a patch suggestion.
 
 Current executable evidence:
 
-- `reports/fault-drop-dirty-writeback.json` fails as expected under the
-  `drop_dirty_writeback` mode.
-- The first reported failure is a final backing-memory mismatch, which is the
-  right symptom for a lost dirty victim rather than a vague random mismatch.
+- `tests/test_verification_core.py::test_each_fault_mode_has_a_deterministic_detecting_sequence`
+  verifies all five modes.
+- `reports/fault-drop-dirty-writeback.json` is a sample JSON artifact for the
+  dirty victim loss case.
+- The report generator renders a fault matrix without claiming any real RTL bug.

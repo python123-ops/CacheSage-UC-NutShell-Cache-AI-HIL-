@@ -1,0 +1,20 @@
+{
+  "name": "Example-NutShellCache",
+  "repo": "XS-MLVP/Example-NutShellCache",
+  "remote": "https://github.com/XS-MLVP/Example-NutShellCache.git",
+  "branch": "master",
+  "commit": "cdc9ef7d4dfc3d8fbd969869f6696afe27cfed2a",
+  "checked_at": "2026-06-14",
+  "required_paths": ["Makefile", "rtl", "src", "test"],
+  "root_entries_observed": [
+    ".gitignore",
+    ".gtkwaverc",
+    "Makefile",
+    "Readme.md",
+    "nutshell_cache_report_demo.pdf",
+    "pytest.ini",
+    "rtl",
+    "src",
+    "test"
+  ]
+}

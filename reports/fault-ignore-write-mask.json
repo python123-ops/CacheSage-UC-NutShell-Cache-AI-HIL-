@@ -1,0 +1,35 @@
+{
+  "passed": false,
+  "seed": 11,
+  "transaction_count": 3,
+  "covered_points": [
+    "cp_full_line_mask",
+    "cp_partial_mask_low",
+    "cp_read_after_write",
+    "cp_read_hit",
+    "cp_read_miss_refill",
+    "cp_refill_alignment",
+    "cp_write_hit_mask",
+    "cp_write_miss_allocate"
+  ],
+  "coverage": {
+    "total": 23,
+    "covered": 8,
+    "percent": 34.78
+  },
+  "failures": [
+    {
+      "index": 2,
+      "tag": "mask-readback",
+      "message": "data mismatch at 0x0: expected 287493341, observed 2864434397"
+    }
+  ],
+  "event_counts": {
+    "miss": 1,
+    "refill": 1,
+    "write": 2,
+    "hit": 2,
+    "masked_write": 1,
+    "read": 1
+  }
+}

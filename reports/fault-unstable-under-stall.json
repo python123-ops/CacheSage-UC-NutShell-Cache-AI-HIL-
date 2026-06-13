@@ -1,0 +1,40 @@
+{
+  "passed": false,
+  "seed": 11,
+  "transaction_count": 2,
+  "covered_points": [
+    "cp_full_line_mask",
+    "cp_read_after_write",
+    "cp_read_hit",
+    "cp_read_miss_refill",
+    "cp_refill_alignment",
+    "cp_stall_hold",
+    "cp_write_miss_allocate"
+  ],
+  "coverage": {
+    "total": 23,
+    "covered": 7,
+    "percent": 30.43
+  },
+  "failures": [
+    {
+      "index": 1,
+      "tag": "stall-readback",
+      "message": "data mismatch at 0x0: expected 3405691582, observed 3405691457"
+    },
+    {
+      "index": 0,
+      "tag": "stall-write-window",
+      "message": "event sequence mismatch: expected [('miss', 0, ''), ('refill', 0, ''), ('stall_hold', 0, 'stall-write-window'), ('write', 0, 'stall-write-window')], observed [('miss', 0, ''), ('refill', 0, ''), ('stall_hold', 0, 'stall-write-window'), ('write', 0, 'stall-write-window'), ('unstable_under_stall', 0, 'stall-write-window')]"
+    }
+  ],
+  "event_counts": {
+    "miss": 1,
+    "refill": 1,
+    "stall_hold": 2,
+    "write": 1,
+    "unstable_under_stall": 1,
+    "hit": 1,
+    "read": 1
+  }
+}

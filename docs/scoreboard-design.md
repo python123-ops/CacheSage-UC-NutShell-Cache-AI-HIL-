@@ -13,7 +13,8 @@ The current Python harness is intentionally small and reviewable:
 - `CacheModel` is a set-associative cache with dirty bits, refill, replacement,
   writeback, and optional fault modes.
 - `VerificationRunner` runs the same sequence through a golden model and a
-  candidate model, then compares read responses and final backing memory.
+  candidate model, then compares read responses, final backing memory, and
+  monitor event signatures.
 - Coverage is derived from observed transactions and cache events, not from a
   hand-written checklist alone.
 
@@ -26,8 +27,9 @@ scoreboard rehearsal: the rules are executable before the RTL adapter lands.
 | --- | --- | --- |
 | Masked writes preserve unselected bytes. | Store data can look correct on selected lanes while corrupting neighbors. | Readback against reference memory. |
 | Dirty victim writeback happens before replacement completes. | End-state data can be lost even if the immediate refill succeeds. | Final memory comparison plus writeback event coverage. |
-| Replacement rotates under same-set pressure. | Naive random traffic may never expose replacement state bugs. | Same-set constrained stream and eviction coverage. |
+| Replacement rotates under same-set pressure. | Naive random traffic may never expose replacement state bugs. | Same-set constrained stream plus eviction-address event comparison. |
 | Refill events align to the requested line. | Beat indexing bugs often show only on line offsets. | Refill event plus readback coverage. |
+| Stall windows keep metadata/data stable. | A short architectural readback can miss a handshake stability bug. | Stall-tagged transactions plus event-level scoreboard failure. |
 | Scoreboard failures are classified before asking AI to patch. | A generated "fix" can hide a scoreboard bug or stimulus bug. | AI-HIL collaboration log and fault JSON artifacts. |
 
 ## Planned Toffee Mapping

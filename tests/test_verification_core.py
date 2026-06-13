@@ -49,16 +49,40 @@ class VerificationCoreTests(unittest.TestCase):
         self.assertIn("memory mismatch", result.failures[0].message.lower())
         self.assertIn("cp_dirty_eviction", result.covered_points)
 
-    def test_seeded_random_run_is_reproducible_and_reaches_core_coverage(self):
-        from cachesage_uc.verification import VerificationRunner, build_seeded_random_sequence
+    def test_each_fault_mode_has_a_deterministic_detecting_sequence(self):
+        from cachesage_uc.verification import FaultMode, VerificationRunner, build_fault_sequence
 
-        sequence_a = build_seeded_random_sequence(seed=7, count=60)
-        sequence_b = build_seeded_random_sequence(seed=7, count=60)
+        expected_markers = {
+            FaultMode.DROP_DIRTY_WRITEBACK: "memory mismatch",
+            FaultMode.IGNORE_WRITE_MASK: "data mismatch",
+            FaultMode.STUCK_REPLACEMENT: "eviction sequence mismatch",
+            FaultMode.REFILL_SHIFT: "data mismatch",
+            FaultMode.UNSTABLE_UNDER_STALL: "data mismatch",
+        }
+
+        runner = VerificationRunner()
+        for fault, marker in expected_markers.items():
+            with self.subTest(fault=fault.value):
+                sequence = build_fault_sequence(fault)
+                result = runner.run(sequence, fault=fault)
+
+                self.assertFalse(result.passed)
+                self.assertGreaterEqual(len(result.failures), 1)
+                joined = "\n".join(failure.message.lower() for failure in result.failures)
+                self.assertIn(marker, joined)
+
+    def test_seeded_random_run_is_reproducible_and_reaches_core_coverage(self):
+        from cachesage_uc.verification import ALL_COVERPOINTS, VerificationRunner, build_seeded_random_sequence
+
+        sequence_a = build_seeded_random_sequence(seed=11, count=96)
+        sequence_b = build_seeded_random_sequence(seed=11, count=96)
         self.assertEqual([txn.to_dict() for txn in sequence_a], [txn.to_dict() for txn in sequence_b])
 
         result = VerificationRunner().run(sequence_a)
 
         self.assertTrue(result.passed, result.failures)
+        self.assertGreaterEqual(len(ALL_COVERPOINTS), 20)
+        self.assertGreaterEqual(result.coverage.percent, 90.0)
         self.assertIn("cp_read_miss_refill", result.covered_points)
         self.assertIn("cp_write_hit_mask", result.covered_points)
         self.assertIn("cp_replacement_rotation", result.covered_points)
@@ -96,7 +120,8 @@ class VerificationCliTests(unittest.TestCase):
             payload = json.loads(output.read_text(encoding="utf-8"))
             self.assertTrue(payload["passed"])
             self.assertEqual(payload["seed"], 11)
-            self.assertGreaterEqual(payload["coverage"]["percent"], 40.0)
+            self.assertGreaterEqual(payload["coverage"]["total"], 20)
+            self.assertGreaterEqual(payload["coverage"]["percent"], 90.0)
 
 
 if __name__ == "__main__":

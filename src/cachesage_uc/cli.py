@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 from .evidence import build_default_bundle, render_markdown_report
-from .verification import FaultMode, VerificationRunner, build_seeded_random_sequence
+from .verification import FaultMode, VerificationRunner, build_fault_sequence, build_seeded_random_sequence
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -44,9 +44,16 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     if args.command == "run":
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
+        fault = FaultMode(args.fault)
+        if fault is FaultMode.NONE:
+            transactions = build_seeded_random_sequence(seed=args.seed, count=args.count)
+        else:
+            directed = build_fault_sequence(fault)
+            tail_count = max(0, args.count - len(directed))
+            transactions = directed + build_seeded_random_sequence(seed=args.seed, count=tail_count)
         result = VerificationRunner().run(
-            build_seeded_random_sequence(seed=args.seed, count=args.count),
-            fault=FaultMode(args.fault),
+            transactions[: args.count],
+            fault=fault,
             seed=args.seed,
         )
         output.write_text(json.dumps(result.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")

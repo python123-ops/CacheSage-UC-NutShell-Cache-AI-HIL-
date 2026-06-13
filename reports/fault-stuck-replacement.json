@@ -1,0 +1,30 @@
+{
+  "passed": false,
+  "seed": 11,
+  "transaction_count": 4,
+  "covered_points": [
+    "cp_clean_eviction",
+    "cp_read_miss_refill",
+    "cp_refill_alignment",
+    "cp_replacement_rotation",
+    "cp_same_set_pressure"
+  ],
+  "coverage": {
+    "total": 23,
+    "covered": 5,
+    "percent": 21.74
+  },
+  "failures": [
+    {
+      "index": 3,
+      "tag": "replace-evict-b",
+      "message": "eviction sequence mismatch: expected [('miss', 96, ''), ('eviction', 32, 'clean'), ('refill', 96, ''), ('read', 96, 'replace-evict-b')], observed [('miss', 96, ''), ('eviction', 64, 'clean'), ('refill', 96, ''), ('read', 96, 'replace-evict-b')]"
+    }
+  ],
+  "event_counts": {
+    "miss": 4,
+    "refill": 4,
+    "read": 4,
+    "eviction": 2
+  }
+}

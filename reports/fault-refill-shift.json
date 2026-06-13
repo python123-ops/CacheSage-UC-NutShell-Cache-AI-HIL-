@@ -1,0 +1,60 @@
+{
+  "passed": false,
+  "seed": 11,
+  "transaction_count": 4,
+  "covered_points": [
+    "cp_clean_eviction",
+    "cp_dirty_eviction",
+    "cp_full_line_mask",
+    "cp_read_after_write",
+    "cp_read_miss_refill",
+    "cp_refill_after_dirty_evict",
+    "cp_refill_alignment",
+    "cp_replacement_rotation",
+    "cp_same_set_pressure",
+    "cp_write_miss_allocate",
+    "cp_writeback_observed"
+  ],
+  "coverage": {
+    "total": 23,
+    "covered": 11,
+    "percent": 47.83
+  },
+  "failures": [
+    {
+      "index": 3,
+      "tag": "refill-shift-readback",
+      "message": "data mismatch at 0x0: expected 287454020, observed 0"
+    },
+    {
+      "index": 0,
+      "tag": "refill-shift-source",
+      "message": "event sequence mismatch: expected [('miss', 0, ''), ('refill', 0, ''), ('write', 0, 'refill-shift-source')], observed [('miss', 0, ''), ('refill_shift', 0, ''), ('refill', 0, ''), ('write', 0, 'refill-shift-source')]"
+    },
+    {
+      "index": 1,
+      "tag": "refill-shift-fill-a",
+      "message": "event sequence mismatch: expected [('miss', 32, ''), ('refill', 32, ''), ('read', 32, 'refill-shift-fill-a')], observed [('miss', 32, ''), ('refill_shift', 32, ''), ('refill', 32, ''), ('read', 32, 'refill-shift-fill-a')]"
+    },
+    {
+      "index": 2,
+      "tag": "refill-shift-evict-source",
+      "message": "event sequence mismatch: expected [('miss', 64, ''), ('eviction', 0, 'dirty'), ('dirty_eviction', 0, ''), ('writeback', 0, ''), ('refill', 64, ''), ('read', 64, 'refill-shift-evict-source')], observed [('miss', 64, ''), ('eviction', 0, 'dirty'), ('dirty_eviction', 0, ''), ('writeback', 0, ''), ('refill_shift', 64, ''), ('refill', 64, ''), ('read', 64, 'refill-shift-evict-source')]"
+    },
+    {
+      "index": 3,
+      "tag": "refill-shift-readback",
+      "message": "event sequence mismatch: expected [('miss', 0, ''), ('eviction', 32, 'clean'), ('refill', 0, ''), ('read', 0, 'refill-shift-readback')], observed [('miss', 0, ''), ('eviction', 32, 'clean'), ('refill_shift', 0, ''), ('refill', 0, ''), ('read', 0, 'refill-shift-readback')]"
+    }
+  ],
+  "event_counts": {
+    "miss": 4,
+    "refill_shift": 4,
+    "refill": 4,
+    "write": 1,
+    "read": 3,
+    "eviction": 2,
+    "dirty_eviction": 1,
+    "writeback": 1
+  }
+}

@@ -77,6 +77,8 @@ class EvidenceModelTests(unittest.TestCase):
         self.assertIn("AI 缺陷与人工修正对比表", report)
         self.assertIn("dirty eviction", report.lower())
         self.assertIn("故障注入", report)
+        self.assertNotIn("缂", report)
+        self.assertNotIn("鏁", report)
         self.assertNotIn("TODO", report)
         self.assertNotIn("TBD", report)
 

@@ -22,3 +22,10 @@ the intended reason. A useful failure artifact contains:
 - scoreboard assertion or monitor assertion;
 - waveform pointer when available;
 - short human diagnosis before asking UCAgent for a patch suggestion.
+
+Current executable evidence:
+
+- `reports/fault-drop-dirty-writeback.json` fails as expected under the
+  `drop_dirty_writeback` mode.
+- The first reported failure is a final backing-memory mismatch, which is the
+  right symptom for a lost dirty victim rather than a vague random mismatch.

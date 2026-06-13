@@ -1,0 +1,74 @@
+{
+  "passed": false,
+  "seed": 11,
+  "transaction_count": 48,
+  "covered_points": [
+    "cp_boundary_address",
+    "cp_clean_eviction",
+    "cp_dirty_eviction",
+    "cp_long_random",
+    "cp_read_hit",
+    "cp_read_miss_refill",
+    "cp_refill_alignment",
+    "cp_replacement_rotation",
+    "cp_write_hit_mask",
+    "cp_write_miss_allocate"
+  ],
+  "coverage": {
+    "total": 12,
+    "covered": 10,
+    "percent": 83.33
+  },
+  "failures": [
+    {
+      "index": 48,
+      "tag": "final-memory",
+      "message": "memory mismatch at 0x0: expected 0x01EF92E9, observed 0x00000000"
+    },
+    {
+      "index": 5,
+      "tag": "dirty-readback",
+      "message": "data mismatch at 0x0: expected 16960733, observed 0"
+    },
+    {
+      "index": 12,
+      "tag": "rand-r12",
+      "message": "data mismatch at 0x70: expected 2313671007, observed 0"
+    },
+    {
+      "index": 16,
+      "tag": "rand-r16",
+      "message": "data mismatch at 0x0: expected 16945701, observed 37413"
+    },
+    {
+      "index": 30,
+      "tag": "rand-r30",
+      "message": "data mismatch at 0x0: expected 24613391, observed 7798799"
+    },
+    {
+      "index": 33,
+      "tag": "rand-r33",
+      "message": "data mismatch at 0xA0: expected 3040059969, observed 0"
+    },
+    {
+      "index": 38,
+      "tag": "rand-r38",
+      "message": "data mismatch at 0x90: expected 255770067, observed 0"
+    },
+    {
+      "index": 42,
+      "tag": "rand-r42",
+      "message": "data mismatch at 0x30: expected 4285923328, observed 0"
+    }
+  ],
+  "event_counts": {
+    "miss": 31,
+    "refill": 31,
+    "write": 31,
+    "hit": 17,
+    "masked_write": 21,
+    "read": 17,
+    "eviction": 27,
+    "dirty_eviction": 21
+  }
+}

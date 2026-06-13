@@ -3,9 +3,9 @@
   "dut": "NutShell Cache",
   "coverage_summary": {
     "total": 12,
-    "covered": 0,
-    "percent": 0.0,
-    "note": "Initial planning snapshot. Replace with measured functional coverage after Picker/Toffee regression runs."
+    "covered": 10,
+    "percent": 83.33,
+    "note": "Measured by the executable Python harness with seed 11 and 48 transactions. Replace with RTL functional coverage after Picker/Toffee regression runs."
   },
   "priority_coverpoints": [
     "cp_dirty_eviction",
@@ -20,5 +20,9 @@
     "refill beat index is shifted by one word",
     "write mask is ignored on store hit",
     "request metadata changes while downstream ready is low"
+  ],
+  "evidence_files": [
+    "reports/sample-run-seed11.json",
+    "reports/fault-drop-dirty-writeback.json"
   ]
 }

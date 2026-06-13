@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 from .evidence import build_default_bundle, render_markdown_report
+from .verification import FaultMode, VerificationRunner, build_seeded_random_sequence
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -16,6 +17,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     report = subcommands.add_parser("report", help="Write the initial markdown report.")
     report.add_argument("--output", required=True, help="Path to the markdown report.")
+
+    run = subcommands.add_parser("run", help="Run the executable cache verification harness.")
+    run.add_argument("--seed", type=int, default=7, help="Deterministic random seed.")
+    run.add_argument("--count", type=int, default=64, help="Number of generated transactions.")
+    run.add_argument("--fault", choices=[fault.value for fault in FaultMode], default=FaultMode.NONE.value)
+    run.add_argument("--output", required=True, help="Path to the JSON run result.")
     return parser
 
 
@@ -31,6 +38,18 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(render_markdown_report(bundle), encoding="utf-8")
+        print(f"wrote {output}")
+        return 0
+
+    if args.command == "run":
+        output = Path(args.output)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        result = VerificationRunner().run(
+            build_seeded_random_sequence(seed=args.seed, count=args.count),
+            fault=FaultMode(args.fault),
+            seed=args.seed,
+        )
+        output.write_text(json.dumps(result.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"wrote {output}")
         return 0
 

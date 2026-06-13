@@ -42,8 +42,9 @@ priority because they are easy for shallow AI-generated tests to miss.
 - `CoverageCollector`: records functional coverpoints and produces JSON evidence.
 - `PromptJournal`: stores UCAgent prompt rounds, rejected drafts, and human fixes.
 
-The current repository contains the evidence model for these pieces. The next
-code checkpoint should attach the components to the actual Picker/Toffee DUT.
+The current repository contains both the evidence model and an executable Python
+scoreboard rehearsal for these pieces. The next code checkpoint should attach
+the same interfaces to the actual Picker/Toffee DUT.
 
 ## Coverage Policy
 
@@ -53,3 +54,7 @@ credited unless the scoreboard also proves the victim behavior.
 
 Target functional coverage for a competitive submission is 90 percent or higher,
 but the report must show the measured result from the regression artifacts.
+
+The current harness reaches 10/12 planned points on `seed=11,count=48`. That is
+good enough as a design checkpoint, but the final competition claim should use
+RTL functional coverage from the Toffee regression.

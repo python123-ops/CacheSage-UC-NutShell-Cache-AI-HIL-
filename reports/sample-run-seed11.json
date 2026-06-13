@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "seed": 11,
+  "transaction_count": 48,
+  "covered_points": [
+    "cp_boundary_address",
+    "cp_clean_eviction",
+    "cp_dirty_eviction",
+    "cp_long_random",
+    "cp_read_hit",
+    "cp_read_miss_refill",
+    "cp_refill_alignment",
+    "cp_replacement_rotation",
+    "cp_write_hit_mask",
+    "cp_write_miss_allocate"
+  ],
+  "coverage": {
+    "total": 12,
+    "covered": 10,
+    "percent": 83.33
+  },
+  "failures": [],
+  "event_counts": {
+    "miss": 31,
+    "refill": 31,
+    "write": 31,
+    "hit": 17,
+    "masked_write": 21,
+    "read": 17,
+    "eviction": 27,
+    "dirty_eviction": 21,
+    "writeback": 21
+  }
+}

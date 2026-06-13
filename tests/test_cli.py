@@ -50,6 +50,7 @@ class CliTests(unittest.TestCase):
             text = output.read_text(encoding="utf-8")
             self.assertIn("CacheSage-UC Initial Verification Report", text)
             self.assertIn("AI 缺陷与人工修正对比表", text)
+            self.assertNotIn("缂", text)
 
 
 if __name__ == "__main__":

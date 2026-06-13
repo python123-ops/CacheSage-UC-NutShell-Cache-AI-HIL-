@@ -20,6 +20,8 @@ This repository is at the first engineering checkpoint:
 - AI-human intervention log, written as audit evidence rather than decoration.
 - Fault-injection plan for replacement, dirty bit, refill, write mask, and stall bugs.
 - Initial report generator for competition submission materials.
+- Executable Python harness smoke run: 48 transactions, 10/12 planned coverpoints
+  covered, and dirty-writeback fault injection detected.
 
 The RTL regression is not claimed as complete in this checkpoint. Measured
 functional coverage will be reported after the Picker/Toffee loop is connected.
@@ -39,6 +41,7 @@ functional coverage will be reported after the Picker/Toffee loop is connected.
 python -m pip install -e .
 python -m unittest discover -s tests -v
 python -m cachesage_uc.cli plan
+python -m cachesage_uc.cli run --seed 11 --count 48 --output reports/sample-run-seed11.json
 python scripts/generate_report.py --output reports/initial-verification-report.md
 ```
 
@@ -50,7 +53,7 @@ tooling layer. This keeps the evidence package easy to run on a fresh machine.
 ```text
 src/cachesage_uc/        Evidence model and CLI.
 tests/                   Standard-library regression tests.
-docs/                    Verification plan, AI-HIL notes, and fault-injection design.
+docs/                    Verification plan, scoreboard notes, AI-HIL notes, and fault-injection design.
 examples/                Machine-readable sample evidence.
 reports/                 Generated and curated competition reports.
 scripts/                 Small command-line helpers.
@@ -66,6 +69,11 @@ Picker/Toffee flow:
 3. Replay the scenario matrix with deterministic seeds.
 4. Feed uncovered points and failing seeds back into UCAgent prompt rounds.
 5. Replace planned coverage in the report with measured functional coverage.
+
+The current Python harness already includes a reference cache model, constrained
+transaction generator, scoreboard comparison, coverage attribution, and a
+dirty-writeback fault mode. It is intentionally small enough to review by hand,
+because the contest gives real weight to human intervention and code audit.
 
 ## License
 

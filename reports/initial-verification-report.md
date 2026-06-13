@@ -1,13 +1,21 @@
 # CacheSage-UC Initial Verification Report
 
-This report is the initial evidence package for the UCAgent NutShell Cache track. It records the verification intent, coverage model, AI-human review trail, and fault-injection targets before the RTL regression is attached.
+This report is the initial evidence package for the UCAgent NutShell Cache track. It records the verification intent, executable Python harness results, AI-human review trail, and fault-injection targets before the RTL Picker/Toffee binding is attached.
 
 ## Verification Scope
 
 - DUT: NutShell Cache
 - Scenarios: 10
 - Coverage points tracked: 0/12 (0.00%)
-- Current status: plan and evidence tooling are ready; RTL-measured coverage is reported separately once Picker/Toffee runs are wired in.
+- Executable harness smoke run: PASS, 10/12 planned coverpoints (83.33%).
+- Current status: the Python verification core is runnable; RTL-measured coverage is reported separately once Picker/Toffee runs are wired in.
+
+## Executable Harness Snapshot
+
+| Command | Result | Evidence |
+| --- | --- | --- |
+| `python -m cachesage_uc.cli run --seed 11 --count 48 --output reports/sample-run-seed11.json` | PASS | 48 transactions, 83.33% planned coverpoints |
+| `python -m cachesage_uc.cli run --seed 11 --count 48 --fault drop_dirty_writeback --output reports/fault-drop-dirty-writeback.json` | FAIL as expected | Scoreboard detects dirty victim writeback loss |
 
 ## Scenario Matrix
 
@@ -44,4 +52,4 @@ This report is the initial evidence package for the UCAgent NutShell Cache track
 
 ## Next Regression Gate
 
-The next gate is to connect these scenarios to the Picker-generated Python DUT, run the Toffee environment with deterministic seeds, and replace planned coverage with measured functional coverage plus failure artifacts.
+The next gate is to connect these scenarios to the Picker-generated Python DUT, run the Toffee environment with deterministic seeds, and replace the harness-only coverage with RTL-measured functional coverage plus waveform-backed failure artifacts.

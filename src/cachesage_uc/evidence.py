@@ -242,20 +242,49 @@ def build_default_bundle() -> EvidenceBundle:
 
 
 def render_markdown_report(bundle: EvidenceBundle) -> str:
+    from .verification import (
+        FaultMode,
+        VerificationRunner,
+        build_directed_eviction_sequence,
+        build_seeded_random_sequence,
+    )
+
     summary = bundle.coverage_summary()
+    smoke_result = VerificationRunner().run(
+        build_seeded_random_sequence(seed=11, count=48),
+        seed=11,
+    )
+    fault_result = VerificationRunner().run(
+        build_directed_eviction_sequence(),
+        fault=FaultMode.DROP_DIRTY_WRITEBACK,
+    )
     lines = [
         "# CacheSage-UC Initial Verification Report",
         "",
         "This report is the initial evidence package for the UCAgent NutShell Cache track. "
-        "It records the verification intent, coverage model, AI-human review trail, and "
-        "fault-injection targets before the RTL regression is attached.",
+        "It records the verification intent, executable Python harness results, AI-human review trail, "
+        "and fault-injection targets before the RTL Picker/Toffee binding is attached.",
         "",
         "## Verification Scope",
         "",
         f"- DUT: {bundle.plan.dut}",
         f"- Scenarios: {len(bundle.plan.scenarios)}",
         f"- Coverage points tracked: {summary.covered}/{summary.total} ({summary.percent:.2f}%)",
-        "- Current status: plan and evidence tooling are ready; RTL-measured coverage is reported separately once Picker/Toffee runs are wired in.",
+        f"- Executable harness smoke run: {'PASS' if smoke_result.passed else 'FAIL'}, "
+        f"{smoke_result.coverage.covered}/{smoke_result.coverage.total} planned coverpoints "
+        f"({smoke_result.coverage.percent:.2f}%).",
+        "- Current status: the Python verification core is runnable; RTL-measured coverage is reported separately once Picker/Toffee runs are wired in.",
+        "",
+        "## Executable Harness Snapshot",
+        "",
+        "| Command | Result | Evidence |",
+        "| --- | --- | --- |",
+        "| `python -m cachesage_uc.cli run --seed 11 --count 48 --output reports/sample-run-seed11.json` | "
+        f"{'PASS' if smoke_result.passed else 'FAIL'} | "
+        f"{smoke_result.transaction_count} transactions, {smoke_result.coverage.percent:.2f}% planned coverpoints |",
+        "| `python -m cachesage_uc.cli run --seed 11 --count 48 --fault drop_dirty_writeback --output reports/fault-drop-dirty-writeback.json` | "
+        f"{'FAIL as expected' if not fault_result.passed else 'UNEXPECTED PASS'} | "
+        "Scoreboard detects dirty victim writeback loss |",
         "",
         "## Scenario Matrix",
         "",
@@ -296,8 +325,8 @@ def render_markdown_report(bundle: EvidenceBundle) -> str:
             "## Next Regression Gate",
             "",
             "The next gate is to connect these scenarios to the Picker-generated Python DUT, "
-            "run the Toffee environment with deterministic seeds, and replace planned coverage "
-            "with measured functional coverage plus failure artifacts.",
+            "run the Toffee environment with deterministic seeds, and replace the harness-only "
+            "coverage with RTL-measured functional coverage plus waveform-backed failure artifacts.",
             "",
         ]
     )

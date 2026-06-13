@@ -9,6 +9,7 @@ from .evidence import (
     build_default_bundle,
     render_markdown_report,
 )
+from .verification import FaultMode, VerificationRunner
 
 __all__ = [
     "CoveragePoint",
@@ -18,4 +19,6 @@ __all__ = [
     "VerificationPlan",
     "build_default_bundle",
     "render_markdown_report",
+    "FaultMode",
+    "VerificationRunner",
 ]

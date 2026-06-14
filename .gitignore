@@ -169,4 +169,8 @@ local-backups/
 reports/local-*.json
 reports/local-*.md
 reports/tmp-*
+reports/*.aux
+reports/*.log
+reports/*.out
+reports/*.toc
 

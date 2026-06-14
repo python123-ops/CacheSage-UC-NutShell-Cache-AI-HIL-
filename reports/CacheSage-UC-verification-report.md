@@ -7,7 +7,7 @@ GitHub：github.com/python123-ops/CacheSage-UC
 
 ## 摘要
 
-CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了一套可复现的 cache 验证原型。当前证据包括 Python harness、Generator/CRV、Scoreboard、Coverage、5 类 injected fault 以及人工复核记录。Python harness 在 seed 11、96 个 transaction 上达到 `23/23`，即 `100.00%` 覆盖率。报告同时记录 Picker/Toffee/NutShell 集成边界：RTL/Toffee 覆盖率未实测，不声称已发现真实 NutShell RTL bug。
+CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了一套可复现的 cache 验证原型。当前证据包括 Python harness、Generator/CRV、Scoreboard、Coverage、5 类 injected fault、人工复核记录，以及 Linux 环境下的 Picker/Toffee/NutShell smoke。Python harness 在 seed 11、96 个 transaction 上达到 `23/23`，即 `100.00%` 覆盖率。报告仍将 smoke 通过与 RTL measured coverage 分开记录，不声称已发现真实 NutShell RTL bug。
 
 关键词：UCAgent；NutShell Cache；Scoreboard；约束随机；故障注入；覆盖率
 
@@ -26,7 +26,7 @@ CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了一套可复现的 
 - Python harness 覆盖率：`23/23`，`100.00%`。
 - 执行规模：seed 11，96 个 transaction。
 - 事件计数：dirty_eviction=33, eviction=51, hit=41, masked_write=24, miss=55, read=50, refill=55, reset_window=1, stall_hold=2, write=46, writeback=33。
-- RTL/Toffee 覆盖率未实测；当前 smoke 状态为 `missing_dependencies`，缺失依赖：make, picker, toffee, toffee-test。
+- Picker/Toffee/NutShell smoke：Linux 环境已完成上游 `make gen_dut` 与 `make test` smoke；RTL/Toffee measured coverage 尚未由上游测试导出。
 
 ## 故障注入记录
 
@@ -50,6 +50,6 @@ CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了一套可复现的 
 
 ## 集成边界
 
-本机缺少 Picker、Toffee、Toffee-Test 或 make；Python harness 已完成，RTL smoke 需要依赖齐全后运行。
+Linux 环境依赖齐全；上游 make gen_dut 与 make test smoke 已通过。
 
 本报告将 Python harness 结果与 RTL/Toffee 结果分开记录。上述 fault artifact 仅说明 injected fault 能被 harness 和 scoreboard 检出，不代表真实 NutShell RTL 存在对应缺陷。

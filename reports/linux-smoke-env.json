@@ -1,0 +1,39 @@
+{
+  "wsl_os": {
+    "returncode": 0,
+    "output": "PRETTY_NAME=\"Ubuntu 24.04.4 LTS\"\nVERSION_ID=\"24.04\""
+  },
+  "kernel": {
+    "returncode": 0,
+    "output": "6.18.33.1-microsoft-standard-WSL2"
+  },
+  "python": {
+    "returncode": 0,
+    "output": "Python 3.12.3"
+  },
+  "make": {
+    "returncode": 0,
+    "output": "GNU Make 4.3"
+  },
+  "gcc": {
+    "returncode": 0,
+    "output": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0"
+  },
+  "verilator": {
+    "returncode": 0,
+    "output": "Verilator 5.020 2024-01-01 rev (Debian 5.020-1)"
+  },
+  "picker": {
+    "returncode": 0,
+    "output": "Running as normal executable\nversion: 0.9.0-master-7d336d5-2026-06-04"
+  },
+  "picker_check": {
+    "returncode": 0,
+    "output": "Running as normal executable\n[OK ] Version: 0.9.0-master-7d336d5-2026-06-04\n[OK ] Exec path: /usr/local/bin/picker\n[OK ] Template path: /usr/local/share/picker/template\n[OK ] Support    Cpp (find: '/usr/local/share/picker/lib' success)\n[OK ] Support Python (find: '/usr/local/share/picker/python' success)",
+    "note": "本次 smoke 只使用 Picker C++/Python 支持；Golang/Java/Lua/Scala 非本项目依赖。"
+  },
+  "toffee": {
+    "returncode": 0,
+    "output": "pytoffee 0.3.0\ntoffee-test 0.3.0"
+  }
+}

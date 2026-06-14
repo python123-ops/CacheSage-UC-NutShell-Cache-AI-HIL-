@@ -87,7 +87,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "note": "RTL 覆盖率与 Python harness 结果分开记录；上游测试导出测量数据后再写入该字段。",
     }
     _write_outputs(output, markdown, payload)
-    print(f"wrote {output}")
+    print(f"wrote {_display_path(output)}")
     return 0 if result.passed and rtl_status == "rtl_smoke_complete" else 1
 
 
@@ -158,9 +158,30 @@ def _run_make(upstream: Path, target: str) -> Dict[str, object]:
     )
     return {
         "returncode": result.returncode,
-        "stdout": result.stdout[-4000:],
-        "stderr": result.stderr[-4000:],
+        "stdout": _sanitize_log(result.stdout[-4000:]),
+        "stderr": _sanitize_log(result.stderr[-4000:]),
     }
+
+
+def _display_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(ROOT)).replace("\\", "/")
+    except ValueError:
+        return path.name
+
+
+def _sanitize_log(text: str) -> str:
+    replacements = {
+        str(ROOT.resolve()).replace("\\", "/"): "<repo>",
+        str(ROOT.resolve()): "<repo>",
+        str(Path.home()).replace("\\", "/"): "<home>",
+        str(Path.home()): "<home>",
+    }
+    sanitized = text
+    for old, new in replacements.items():
+        if old:
+            sanitized = sanitized.replace(old, new)
+    return sanitized
 
 
 if __name__ == "__main__":

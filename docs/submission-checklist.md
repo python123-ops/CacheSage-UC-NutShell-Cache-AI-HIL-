@@ -1,27 +1,25 @@
-# Submission Readiness Checklist
+# 参赛交付核查清单
 
-This checklist maps the repository artifacts to the expected handoff state for
-the UCAgent NutShell Cache track.
+本清单把仓库材料和 UCAgent NutShell Cache 方向的交付状态对应起来，便于提交前逐项核对。
 
-| Area | Current artifact | Status |
+| 方向 | 仓库材料 | 当前记录 |
 | --- | --- | --- |
-| Scenario coverage | `docs/verification-plan.md`, `reports/sample-run-seed11.json` | 12 scenarios and 23 coverpoints cover cache data, control, mask, replacement, stall, reset, and CRV paths. |
-| Verification core | `src/cachesage_uc/verification.py`, `docs/scoreboard-design.md` | Reference model, event scoreboard, deterministic fault modes, and directed replay are implemented. |
-| Integration boundary | `src/cachesage_uc/adapters/`, `scripts/run_nutshell_smoke.py` | Upstream layout inspection, Toffee-style request mapping, and dependency-aware smoke output are present. |
-| Review trail | `review_journal.jsonl`, `docs/review-catalog.md` | Draft issues and human corrections are recorded with linked tests/docs. |
-| Repository hygiene | `tests/`, `pyproject.toml`, `upstream.lock.json`, Apache-2.0 license | Standard-library tests, reproducible commands, locked upstream commit, and no vendored third-party source. |
+| 场景覆盖 | `docs/verification-plan.md`、`reports/sample-run-seed11.json` | 12 个场景和 23 个 coverpoint 覆盖数据路径、控制路径、mask、replacement、stall、reset 和 CRV |
+| 验证核心 | `src/cachesage_uc/verification.py`、`docs/scoreboard-design.md` | reference model、event scoreboard、确定性 fault mode 和 directed replay 已实现 |
+| 集成边界 | `src/cachesage_uc/adapters/`、`scripts/run_nutshell_smoke.py` | 上游结构检查、Toffee-style request 映射和依赖状态记录已具备 |
+| 复核证据 | `review_journal.jsonl`、`docs/review-catalog.md` | 草案问题、人工复核发现、修正方式和关联证据已记录 |
+| 仓库卫生 | `tests/`、`pyproject.toml`、`upstream.lock.json`、Apache-2.0 license | 标准库测试、复现命令、锁定上游 commit 和无 vendored 第三方源码 |
 
-## Remaining Integration Work
+## 集成环境记录
 
-1. run `scripts/fetch_upstream_example.py` and install Picker/Toffee locally;
-2. invoke upstream `make gen_dut` and bind the generated Python DUT into the
-   CacheSage driver/monitor path;
-3. add RTL/Toffee measured functional coverage next to the Python harness result;
-4. attach waveform or transaction-trace snippets for at least one injected fault;
-5. keep extending `review_journal.jsonl` with real prompt rounds and human review notes.
+| 项目 | 记录方式 |
+| --- | --- |
+| 上游源码 | 通过 `scripts/fetch_upstream_example.py` 按 `upstream.lock.json` 拉取到 `third_party/Example-NutShellCache` |
+| Picker/Toffee 依赖 | 由 `scripts/run_nutshell_smoke.py` 写入 JSON/Markdown 状态 |
+| RTL/Toffee 覆盖率 | 与 Python harness 覆盖率分栏记录，不混作同一数据源 |
+| waveform 或 transaction trace | fault artifact 先保存 JSON 摘要，RTL smoke 运行后再附加波形来源 |
+| 复核记录 | 新增 prompt round 时继续写入 `review_journal.jsonl` |
 
-## Non-Claims
+## 非声明项
 
-The repository does not claim that NutShell RTL has a real bug. The current
-fault artifacts are injected-fault checks used to validate the verification
-environment.
+仓库不声称真实 NutShell RTL 存在 bug。当前 fault artifact 是 injected fault 检出证据，用于说明验证环境和 scoreboard 的有效性。

@@ -1,9 +1,9 @@
-# CacheSage-UC NutShell Smoke
+# CacheSage-UC NutShell Smoke 记录
 
-- Status: `missing_dependencies`
-- Upstream root: `third_party/Example-NutShellCache`
-- Missing paths: none
-- Python harness: PASS, 23/23 coverpoints
-- Missing dependencies: make, picker, toffee, toffee-test
-- Next command: `Install Picker, Toffee, Toffee-Test, and make; then rerun scripts/run_nutshell_smoke.py.`
-- Note: The Python harness completed; RTL smoke is waiting on local integration dependencies.
+- 状态：`missing_dependencies`
+- 上游目录：`third_party/Example-NutShellCache`
+- 缺失路径：无
+- Python harness：通过，23/23 个 coverpoint
+- 缺失依赖：make, picker, toffee, toffee-test
+- 依赖说明：本机缺少 Picker、Toffee、Toffee-Test 或 make；Python harness 已完成，RTL smoke 需要依赖齐全后运行。
+- 记录说明：Python harness 已完成；RTL smoke 当前只记录本机集成依赖状态。

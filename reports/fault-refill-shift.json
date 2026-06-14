@@ -1,30 +1,54 @@
 {
   "passed": false,
   "seed": 11,
-  "transaction_count": 4,
+  "transaction_count": 16,
   "covered_points": [
+    "cp_alternating_read_write",
+    "cp_boundary_address",
     "cp_clean_eviction",
     "cp_dirty_eviction",
     "cp_full_line_mask",
+    "cp_mask_mix",
+    "cp_multi_set_traffic",
+    "cp_offset_word_access",
+    "cp_partial_mask_high",
+    "cp_partial_mask_low",
     "cp_read_after_write",
+    "cp_read_hit",
     "cp_read_miss_refill",
     "cp_refill_after_dirty_evict",
     "cp_refill_alignment",
     "cp_replacement_rotation",
     "cp_same_set_pressure",
+    "cp_write_hit_mask",
     "cp_write_miss_allocate",
     "cp_writeback_observed"
   ],
   "coverage": {
     "total": 23,
-    "covered": 11,
-    "percent": 47.83
+    "covered": 20,
+    "percent": 86.96
   },
   "failures": [
+    {
+      "index": 16,
+      "tag": "final-memory",
+      "message": "memory mismatch at 0xC: expected 0x00000000, observed 0x11223344"
+    },
     {
       "index": 3,
       "tag": "refill-shift-readback",
       "message": "data mismatch at 0x0: expected 287454020, observed 0"
+    },
+    {
+      "index": 14,
+      "tag": "dirty-readback",
+      "message": "data mismatch at 0x0: expected 16909060, observed 52445"
+    },
+    {
+      "index": 15,
+      "tag": "boundary-last-word",
+      "message": "data mismatch at 0xC: expected 0, observed 16909060"
     },
     {
       "index": 0,
@@ -45,16 +69,43 @@
       "index": 3,
       "tag": "refill-shift-readback",
       "message": "event sequence mismatch: expected [('miss', 0, ''), ('eviction', 32, 'clean'), ('refill', 0, ''), ('read', 0, 'refill-shift-readback')], observed [('miss', 0, ''), ('eviction', 32, 'clean'), ('refill_shift', 0, ''), ('refill', 0, ''), ('read', 0, 'refill-shift-readback')]"
+    },
+    {
+      "index": 10,
+      "tag": "cold-read",
+      "message": "event sequence mismatch: expected [('miss', 16, ''), ('refill', 16, ''), ('read', 16, 'cold-read')], observed [('miss', 16, ''), ('refill_shift', 16, ''), ('refill', 16, ''), ('read', 16, 'cold-read')]"
+    },
+    {
+      "index": 11,
+      "tag": "same-set-write",
+      "message": "event sequence mismatch: expected [('miss', 32, ''), ('eviction', 64, 'clean'), ('refill', 32, ''), ('write', 32, 'same-set-write')], observed [('miss', 32, ''), ('eviction', 64, 'clean'), ('refill_shift', 32, ''), ('refill', 32, ''), ('write', 32, 'same-set-write')]"
+    },
+    {
+      "index": 12,
+      "tag": "same-set-evict",
+      "message": "event sequence mismatch: expected [('miss', 64, ''), ('eviction', 0, 'dirty'), ('dirty_eviction', 0, ''), ('writeback', 0, ''), ('refill', 64, ''), ('read', 64, 'same-set-evict')], observed [('miss', 64, ''), ('eviction', 0, 'dirty'), ('dirty_eviction', 0, ''), ('writeback', 0, ''), ('refill_shift', 64, ''), ('refill', 64, ''), ('read', 64, 'same-set-evict')]"
+    },
+    {
+      "index": 13,
+      "tag": "same-set-clean-evict",
+      "message": "event sequence mismatch: expected [('miss', 96, ''), ('eviction', 32, 'dirty'), ('dirty_eviction', 32, ''), ('writeback', 32, ''), ('refill', 96, ''), ('read', 96, 'same-set-clean-evict')], observed [('miss', 96, ''), ('eviction', 32, 'dirty'), ('dirty_eviction', 32, ''), ('writeback', 32, ''), ('refill_shift', 96, ''), ('refill', 96, ''), ('read', 96, 'same-set-clean-evict')]"
+    },
+    {
+      "index": 14,
+      "tag": "dirty-readback",
+      "message": "event sequence mismatch: expected [('miss', 0, ''), ('eviction', 64, 'clean'), ('refill', 0, ''), ('read', 0, 'dirty-readback')], observed [('miss', 0, ''), ('eviction', 64, 'clean'), ('refill_shift', 0, ''), ('refill', 0, ''), ('read', 0, 'dirty-readback')]"
     }
   ],
   "event_counts": {
-    "miss": 4,
-    "refill_shift": 4,
-    "refill": 4,
-    "write": 1,
-    "read": 3,
-    "eviction": 2,
-    "dirty_eviction": 1,
-    "writeback": 1
+    "miss": 9,
+    "refill_shift": 9,
+    "refill": 9,
+    "write": 5,
+    "read": 11,
+    "eviction": 6,
+    "dirty_eviction": 3,
+    "writeback": 3,
+    "hit": 7,
+    "masked_write": 2
   }
 }

@@ -1,29 +1,38 @@
 {
   "passed": false,
   "seed": 11,
-  "transaction_count": 4,
+  "transaction_count": 16,
   "covered_points": [
+    "cp_alternating_read_write",
+    "cp_boundary_address",
     "cp_clean_eviction",
     "cp_dirty_eviction",
     "cp_full_line_mask",
+    "cp_mask_mix",
+    "cp_multi_set_traffic",
+    "cp_offset_word_access",
+    "cp_partial_mask_high",
+    "cp_partial_mask_low",
     "cp_read_after_write",
+    "cp_read_hit",
     "cp_read_miss_refill",
     "cp_refill_after_dirty_evict",
     "cp_refill_alignment",
     "cp_replacement_rotation",
     "cp_same_set_pressure",
+    "cp_write_hit_mask",
     "cp_write_miss_allocate"
   ],
   "coverage": {
     "total": 23,
-    "covered": 10,
-    "percent": 43.48
+    "covered": 19,
+    "percent": 82.61
   },
   "failures": [
     {
-      "index": 4,
+      "index": 16,
       "tag": "final-memory",
-      "message": "memory mismatch at 0x0: expected 0xDEADBEEF, observed 0x00000000"
+      "message": "memory mismatch at 0x0: expected 0x01020304, observed 0x00000000"
     },
     {
       "index": 3,
@@ -31,17 +40,34 @@
       "message": "data mismatch at 0x0: expected 3735928559, observed 0"
     },
     {
+      "index": 14,
+      "tag": "dirty-readback",
+      "message": "data mismatch at 0x0: expected 16909060, observed 0"
+    },
+    {
       "index": 2,
       "tag": "same-set-fill-b",
       "message": "event sequence mismatch: expected [('miss', 64, ''), ('eviction', 0, 'dirty'), ('dirty_eviction', 0, ''), ('writeback', 0, ''), ('refill', 64, ''), ('read', 64, 'same-set-fill-b')], observed [('miss', 64, ''), ('eviction', 0, 'dirty'), ('dirty_eviction', 0, ''), ('refill', 64, ''), ('read', 64, 'same-set-fill-b')]"
+    },
+    {
+      "index": 12,
+      "tag": "same-set-evict",
+      "message": "event sequence mismatch: expected [('miss', 64, ''), ('eviction', 0, 'dirty'), ('dirty_eviction', 0, ''), ('writeback', 0, ''), ('refill', 64, ''), ('read', 64, 'same-set-evict')], observed [('miss', 64, ''), ('eviction', 0, 'dirty'), ('dirty_eviction', 0, ''), ('refill', 64, ''), ('read', 64, 'same-set-evict')]"
+    },
+    {
+      "index": 13,
+      "tag": "same-set-clean-evict",
+      "message": "event sequence mismatch: expected [('miss', 96, ''), ('eviction', 32, 'dirty'), ('dirty_eviction', 32, ''), ('writeback', 32, ''), ('refill', 96, ''), ('read', 96, 'same-set-clean-evict')], observed [('miss', 96, ''), ('eviction', 32, 'dirty'), ('dirty_eviction', 32, ''), ('refill', 96, ''), ('read', 96, 'same-set-clean-evict')]"
     }
   ],
   "event_counts": {
-    "miss": 4,
-    "refill": 4,
-    "write": 1,
-    "read": 3,
-    "eviction": 2,
-    "dirty_eviction": 1
+    "miss": 9,
+    "refill": 9,
+    "write": 5,
+    "read": 11,
+    "eviction": 6,
+    "dirty_eviction": 3,
+    "hit": 7,
+    "masked_write": 2
   }
 }

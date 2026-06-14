@@ -32,7 +32,7 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         payload = json.loads(result.stdout)
-        self.assertEqual(payload["title"], "CacheSage-UC NutShell Cache Verification Plan")
+        self.assertEqual(payload["title"], "CacheSage-UC NutShell Cache 验证计划")
         self.assertGreaterEqual(len(payload["scenarios"]), 8)
         self.assertTrue(any("dirty eviction" in item["name"].lower() for item in payload["scenarios"]))
 
@@ -44,13 +44,13 @@ class CliTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("wrote", result.stdout.lower())
             text = output.read_text(encoding="utf-8")
-            self.assertIn("CacheSage-UC Verification Record", text)
+            self.assertIn("CacheSage-UC 验证记录", text)
             self.assertIn("设计复盘与修正记录", text)
             self.assertIn("故障注入记录", text)
             self.assertNotIn("AI output", text)
             self.assertNotIn("AI 盲区", text)
-            self.assertNotIn("缂?", text)
-            self.assertNotIn("閺?", text)
+            self.assertNotIn("Next", text)
+            self.assertNotIn("Pending", text)
 
     def test_fault_run_uses_deterministic_detecting_sequence(self):
         with tempfile.TemporaryDirectory() as tmp:

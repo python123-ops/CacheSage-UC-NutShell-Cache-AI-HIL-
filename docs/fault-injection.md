@@ -1,32 +1,27 @@
-# Fault-Injection Plan
+# 故障注入方案
 
-Fault injection is included to prove the verification environment can catch
-realistic cache mistakes. These injections validate the testbench; they are not
-claims about existing NutShell defects.
+故障注入用于确认验证环境能抓住常见 cache 错误。这里的 fault mode 是 testbench 自带的 injected fault，不代表真实 NutShell RTL 存在对应缺陷。
 
-| Fault mode | Injected behavior | Expected detector | Deterministic entry |
+| fault mode | 注入行为 | 预期检测器 | 确定性入口 |
 | --- | --- | --- | --- |
-| `drop_dirty_writeback` | Dirty victim data is not written back before replacement. | Final memory mismatch plus missing writeback event. | `build_fault_sequence(FaultMode.DROP_DIRTY_WRITEBACK)` |
-| `ignore_write_mask` | Store hit ignores byte mask and overwrites all lanes. | Readback data mismatch on untouched bytes. | `build_fault_sequence(FaultMode.IGNORE_WRITE_MASK)` |
-| `stuck_replacement` | Replacement pointer does not advance under same-set pressure. | Event-level scoreboard sees wrong eviction address. | `build_fault_sequence(FaultMode.STUCK_REPLACEMENT)` |
-| `refill_shift` | Refill data is shifted by one word. | Readback data mismatch after dirty line is evicted and refilled. | `build_fault_sequence(FaultMode.REFILL_SHIFT)` |
-| `unstable_under_stall` | Data mutates while a stall-tagged request is held. | Readback data mismatch and `unstable_under_stall` event. | `build_fault_sequence(FaultMode.UNSTABLE_UNDER_STALL)` |
+| `drop_dirty_writeback` | dirty victim 在 replacement 前没有写回 | final memory mismatch 与缺失 writeback event | `build_fault_sequence(FaultMode.DROP_DIRTY_WRITEBACK)` |
+| `ignore_write_mask` | store hit 忽略 byte mask 并覆盖所有 byte lane | 未选中字节 readback mismatch | `build_fault_sequence(FaultMode.IGNORE_WRITE_MASK)` |
+| `stuck_replacement` | same-set pressure 下 replacement pointer 不推进 | event-level scoreboard 观察到错误 eviction address | `build_fault_sequence(FaultMode.STUCK_REPLACEMENT)` |
+| `refill_shift` | refill data 偏移一个 word | dirty line eviction/refill 后 readback mismatch | `build_fault_sequence(FaultMode.REFILL_SHIFT)` |
+| `unstable_under_stall` | stall-tagged request 被 hold 时 data 发生变化 | readback mismatch 与 `unstable_under_stall` event | `build_fault_sequence(FaultMode.UNSTABLE_UNDER_STALL)` |
 
-## Acceptance Rule
+## 接收规则
 
-Each injected fault must have at least one deterministic sequence that fails for
-the intended reason. A useful failure artifact contains:
+每个 injected fault 至少有一条确定性 sequence，并且失败原因要与 fault 类型匹配。有效 artifact 至少包含：
 
-- fault mode and deterministic seed or directed sequence name;
-- transaction trace summary;
-- first scoreboard or monitor failure;
-- coverage points touched by the failure path;
-- short human diagnosis before asking UCAgent for a patch suggestion.
+- fault mode 与 deterministic seed 或 directed sequence 名称；
+- transaction trace 摘要；
+- 首个 scoreboard 或 monitor failure；
+- 失败路径触达的 coverpoint；
+- 人工诊断记录，再进入修正建议环节。
 
-Current executable evidence:
+当前可执行证据：
 
-- `tests/test_verification_core.py::test_each_fault_mode_has_a_deterministic_detecting_sequence`
-  verifies all five modes.
-- `reports/fault-drop-dirty-writeback.json` is a sample JSON artifact for the
-  dirty victim loss case.
-- The report generator renders a fault matrix without claiming any real RTL bug.
+- `tests/test_verification_core.py::test_each_fault_mode_has_a_deterministic_detecting_sequence` 覆盖五类 fault mode。
+- `reports/fault-drop-dirty-writeback.json` 记录 dirty victim loss 样例。
+- 报告生成器输出 fault matrix，并明确不把 injected fault 写成真实 RTL bug。

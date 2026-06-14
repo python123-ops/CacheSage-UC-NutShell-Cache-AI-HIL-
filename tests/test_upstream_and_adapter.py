@@ -129,7 +129,9 @@ class NutShellAdapterTests(unittest.TestCase):
             payload = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(payload["status"], "missing_dependencies")
             self.assertIn("picker", payload["missing_dependencies"])
-            self.assertIn("install", payload["next_command"].lower())
+            self.assertIn("dependency_note", payload)
+            self.assertNotIn("next_command", payload)
+            self.assertIn("Picker", payload["dependency_note"])
 
 
 class ReviewEvidenceTests(unittest.TestCase):

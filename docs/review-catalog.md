@@ -1,15 +1,13 @@
-# Review Catalog
+# 复核记录目录
 
-This catalog records review findings that changed the verification plan or the
-testbench implementation.
+本目录记录已经改变验证计划或 testbench 实现的复核发现。
 
-| ID | Review finding | Correction | Evidence |
+| ID | 复核发现 | 修正方式 | 关联证据 |
 | --- | --- | --- | --- |
-| RV-001 | Replacement was treated as one generic case. | Split clean eviction, dirty eviction, and same-set pressure. | `docs/verification-plan.md`, `tests/test_verification_core.py` |
-| RV-002 | Uniform random addresses were proposed. | Added a directed coverage spine before the random tail. | `build_seeded_random_sequence(seed=11,count=96)` |
-| RV-003 | Fault injection focused only on dirty writeback and masks. | Added `stuck_replacement`, `refill_shift`, and `unstable_under_stall`. | `test_each_fault_mode_has_a_deterministic_detecting_sequence` |
-| RV-004 | Report wording blurred planned coverage and measured RTL coverage. | Split evidence into planned, Python harness measured, and RTL/Toffee measured buckets. | `reports/initial-verification-report.md` |
-| RV-005 | Adapter design was initially guessed without reading upstream shape. | Locked Example-NutShellCache commit and added layout inspection before smoke. | `upstream.lock.json`, `docs/upstream-survey.md` |
+| RV-001 | replacement 被当成一个泛化场景 | 拆分 clean eviction、dirty eviction 和 same-set pressure | `docs/verification-plan.md`、`tests/test_verification_core.py` |
+| RV-002 | 草案建议均匀随机地址 | 在随机尾段前加入 directed coverage spine | `build_seeded_random_sequence(seed=11,count=96)` |
+| RV-003 | fault injection 只覆盖 dirty writeback 和 mask | 增加 `stuck_replacement`、`refill_shift`、`unstable_under_stall` | `test_each_fault_mode_has_a_deterministic_detecting_sequence` |
+| RV-004 | 报告口径混淆计划覆盖点和 RTL 实测覆盖率 | 拆成 planned、Python harness 和 RTL/Toffee 三类证据 | `reports/initial-verification-report.md` |
+| RV-005 | adapter 设计在读上游结构前先猜接口 | 锁定 Example-NutShellCache commit，并在 smoke 前检查 layout | `upstream.lock.json`、`docs/upstream-survey.md` |
 
-The JSONL version in `review_journal.jsonl` is the machine-readable source used
-by tests and report review.
+`review_journal.jsonl` 是机器可读来源，测试和报告复核都会读取它。

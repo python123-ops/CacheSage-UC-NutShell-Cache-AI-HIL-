@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -22,6 +23,18 @@ BANNED_PUBLIC_PHRASES = [
     "AI defect",
     "AI-generated report",
     "AI-HIL",
+    "中文简介",
+    "Next Integration",
+    "Next Regression",
+    "Remaining Integration Work",
+    "Not claimed yet",
+    "Pending",
+    "Next command",
+    "next checkpoint",
+    "下一个",
+    "下一步",
+    "待完成",
+    "未完成",
     "AI 盲区",
     "拿高分",
     "高分",
@@ -30,6 +43,8 @@ BANNED_PUBLIC_PHRASES = [
     "C:\\Users\\",
     "px830",
 ]
+MOJIBAKE_MARKERS = ["涓", "锛", "銆", "鐩", "璁", "鏁", "鎷", "楂"]
+ALLOWED_NON_CHINESE_HEADINGS = {"# CacheSage-UC"}
 
 
 class PublicMaterialsToneTests(unittest.TestCase):
@@ -40,6 +55,33 @@ class PublicMaterialsToneTests(unittest.TestCase):
             for phrase in BANNED_PUBLIC_PHRASES:
                 if phrase.lower() in text.lower():
                     violations.append(f"{path.relative_to(ROOT)}: {phrase}")
+
+        self.assertEqual(violations, [])
+
+    def test_public_materials_have_no_mojibake_markers(self):
+        violations = []
+        for path in _iter_public_files():
+            text = path.read_text(encoding="utf-8")
+            for marker in MOJIBAKE_MARKERS:
+                if marker in text:
+                    violations.append(f"{path.relative_to(ROOT)}: {marker}")
+
+        self.assertEqual(violations, [])
+
+    def test_markdown_headings_are_chinese_engineering_notes(self):
+        violations = []
+        han_pattern = re.compile(r"[\u4e00-\u9fff]")
+        for path in _iter_public_files():
+            if path.suffix != ".md":
+                continue
+            for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+                stripped = line.strip()
+                if not stripped.startswith("#"):
+                    continue
+                if stripped in ALLOWED_NON_CHINESE_HEADINGS:
+                    continue
+                if not han_pattern.search(stripped):
+                    violations.append(f"{path.relative_to(ROOT)}:{lineno}: {stripped}")
 
         self.assertEqual(violations, [])
 

@@ -163,6 +163,7 @@ cython_debug/
 # Project-local integration workspaces
 third_party/
 .worktrees/
+local-backups/
 
 # Local smoke/debug artifacts
 reports/local-*.json

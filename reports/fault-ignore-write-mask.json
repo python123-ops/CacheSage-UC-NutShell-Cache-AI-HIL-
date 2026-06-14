@@ -1,35 +1,65 @@
 {
   "passed": false,
   "seed": 11,
-  "transaction_count": 3,
+  "transaction_count": 16,
   "covered_points": [
+    "cp_alternating_read_write",
+    "cp_boundary_address",
+    "cp_clean_eviction",
+    "cp_dirty_eviction",
     "cp_full_line_mask",
+    "cp_mask_mix",
+    "cp_multi_set_traffic",
+    "cp_offset_word_access",
+    "cp_partial_mask_high",
     "cp_partial_mask_low",
     "cp_read_after_write",
     "cp_read_hit",
     "cp_read_miss_refill",
+    "cp_refill_after_dirty_evict",
     "cp_refill_alignment",
+    "cp_replacement_rotation",
+    "cp_same_set_pressure",
     "cp_write_hit_mask",
-    "cp_write_miss_allocate"
+    "cp_write_miss_allocate",
+    "cp_writeback_observed"
   ],
   "coverage": {
     "total": 23,
-    "covered": 8,
-    "percent": 34.78
+    "covered": 20,
+    "percent": 86.96
   },
   "failures": [
+    {
+      "index": 16,
+      "tag": "final-memory",
+      "message": "memory mismatch at 0x4: expected 0x0000CCDD, observed 0xAABBCCDD"
+    },
     {
       "index": 2,
       "tag": "mask-readback",
       "message": "data mismatch at 0x0: expected 287493341, observed 2864434397"
+    },
+    {
+      "index": 6,
+      "tag": "masked-low-readback",
+      "message": "data mismatch at 0x4: expected 52445, observed 2864434397"
+    },
+    {
+      "index": 8,
+      "tag": "masked-high-readback",
+      "message": "data mismatch at 0x8: expected 1432748032, observed 1432778632"
     }
   ],
   "event_counts": {
-    "miss": 1,
-    "refill": 1,
-    "write": 2,
-    "hit": 2,
-    "masked_write": 1,
-    "read": 1
+    "miss": 6,
+    "refill": 6,
+    "write": 7,
+    "hit": 10,
+    "masked_write": 3,
+    "read": 9,
+    "eviction": 3,
+    "dirty_eviction": 2,
+    "writeback": 2
   }
 }

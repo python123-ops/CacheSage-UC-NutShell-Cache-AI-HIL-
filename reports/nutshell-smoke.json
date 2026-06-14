@@ -180,6 +180,6 @@
     }
   ],
   "rtl_toffee_measured_coverage": null,
-  "next_command": "Install Picker, Toffee, Toffee-Test, and make; then rerun scripts/run_nutshell_smoke.py.",
-  "note": "The Python harness completed; RTL smoke is waiting on local integration dependencies."
+  "dependency_note": "本机缺少 Picker、Toffee、Toffee-Test 或 make；Python harness 已完成，RTL smoke 需要依赖齐全后运行。",
+  "note": "Python harness 已完成；RTL smoke 当前只记录本机集成依赖状态。"
 }

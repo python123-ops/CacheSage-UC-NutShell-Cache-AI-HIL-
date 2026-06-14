@@ -1,24 +1,23 @@
-# Picker / Toffee Flow
+# Picker / Toffee 流程记录
 
-This document records the intended execution path from the current Python
-harness to the real NutShell Cache RTL flow.
+本文档记录当前 Python harness 到真实 NutShell Cache RTL flow 的执行路径和证据边界。
 
-## Local Preparation
+## 本地准备
 
 ```powershell
 python -m pip install -e .
 python scripts/fetch_upstream_example.py --lock upstream.lock.json --dest third_party/Example-NutShellCache
 ```
 
-Install Picker, Toffee, and Toffee-Test following the upstream project guidance:
+Picker、Toffee 和 Toffee-Test 按上游项目说明安装：
 
 - https://github.com/XS-MLVP/picker
 - https://github.com/XS-MLVP/toffee
 - https://github.com/XS-MLVP/toffee-test
 
-## Expected Upstream Commands
+## 上游命令
 
-Inside the fetched upstream tree:
+在拉取后的上游目录中运行：
 
 ```powershell
 make gen_dut
@@ -26,34 +25,29 @@ make test
 make clean
 ```
 
-CacheSage-UC does not assume the RTL interface blindly. The adapter first checks
-the expected upstream structure, then maps the existing transaction stream into
-Toffee-style request cases.
+CacheSage-UC 不直接假设 RTL interface。适配层先检查上游目录结构，再把现有 transaction stream 映射成 Toffee-style request case。
 
-## CacheSage Smoke Boundary
+## CacheSage Smoke 边界
 
 ```powershell
 python scripts/run_nutshell_smoke.py --upstream third_party/Example-NutShellCache
 ```
 
-When the upstream tree is missing, the script returns exit code `2`, writes a
-JSON status file, and prints the exact fetch command. When the tree is present,
-the script writes:
+脚本写出的状态包含：
 
-- inspected upstream layout;
-- Python harness result for seed 11, count 96;
-- a preview of Toffee-style request cases;
-- `rtl_toffee_measured_coverage: null` until a generated DUT run is attached.
+- inspected upstream layout；
+- seed 11、count 96 的 Python harness 结果；
+- Toffee-style request case 预览；
+- `rtl_toffee_measured_coverage: null`，用于明确当前记录不把 RTL 覆盖率混入 Python harness 数据。
 
-## Coverage Reporting Contract
+## 覆盖率记录约定
 
-CacheSage-UC keeps three buckets separate:
+CacheSage-UC 固定分成三类数据：
 
-| Bucket | Meaning |
+| 类别 | 含义 |
 | --- | --- |
-| Planned coverage | The functional coverpoints in `docs/verification-plan.md`. |
-| Python harness measured coverage | What `VerificationRunner` measured on the reference/candidate cache model. |
-| RTL/Toffee measured coverage | What the Picker-generated DUT run measured; this remains empty until the dependency flow is actually run. |
+| planned coverage | `docs/verification-plan.md` 中定义的功能覆盖点 |
+| Python harness measured coverage | `VerificationRunner` 在 reference/candidate cache model 上测得的数据 |
+| RTL/Toffee measured coverage | Picker-generated DUT 运行后导出的 RTL 路径数据 |
 
-This is intentionally conservative: the integration record should show measured
-results, not overstate the current state.
+这个拆分让报告保持可复核：没有实测来源的数据不写成实测结论。

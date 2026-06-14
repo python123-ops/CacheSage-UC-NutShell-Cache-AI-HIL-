@@ -1,47 +1,36 @@
-# Scoreboard Design Notes
+# Scoreboard 设计记录
 
-The scoreboard is the part of this project where I want the most human review.
-Cache bugs are often not "wrong data immediately" bugs. They can be event-order
-bugs: a dirty victim is written too late, a refill overwrites a live line, or a
-stall lets request metadata drift while the data path looks fine in a short run.
+Scoreboard 是本项目最需要人工复核的部分。Cache bug 经常不是“立即读错数据”这么简单，而是事件顺序错误：dirty victim 写回太晚、refill 覆盖活跃 line，或者 stall 时 request metadata 漂移，但短路径 readback 看起来仍然正常。
 
-## Current Executable Harness
+## 当前可执行 Harness
 
-The current Python harness is intentionally small and reviewable:
+当前 Python harness 刻意保持小而可审阅：
 
-- `Transaction` represents aligned read/write operations and byte masks.
-- `CacheModel` is a set-associative cache with dirty bits, refill, replacement,
-  writeback, and optional fault modes.
-- `VerificationRunner` runs the same sequence through a golden model and a
-  candidate model, then compares read responses, final backing memory, and
-  monitor event signatures.
-- Coverage is derived from observed transactions and cache events, not from a
-  hand-written checklist alone.
+- `Transaction` 表示对齐 read/write 操作和 byte mask。
+- `CacheModel` 是带 dirty bit、refill、replacement、writeback 和 fault mode 的 set-associative cache。
+- `VerificationRunner` 用同一序列分别驱动 golden model 和 candidate model，再比较 read response、最终 backing memory 和 monitor event signature。
+- 覆盖率来自实际观测到的 transaction 和 cache event，而不是只靠手写 checklist。
 
-This is not a replacement for the final Picker/Toffee DUT binding. It is a
-scoreboard rehearsal: the rules are executable before the RTL adapter lands.
+这不是最终 Picker/Toffee DUT binding 的替代品，而是 scoreboard rehearsal：在 RTL adapter 接上之前，先让规则可执行、可复查。
 
-## Invariants Owned By Human Review
+## 人工复核的不变量
 
-| Invariant | Why it matters | Current detector |
+| invariant | 重要性 | 当前检测方式 |
 | --- | --- | --- |
-| Masked writes preserve unselected bytes. | Store data can look correct on selected lanes while corrupting neighbors. | Readback against reference memory. |
-| Dirty victim writeback happens before replacement completes. | End-state data can be lost even if the immediate refill succeeds. | Final memory comparison plus writeback event coverage. |
-| Replacement rotates under same-set pressure. | Naive random traffic may never expose replacement state bugs. | Same-set constrained stream plus eviction-address event comparison. |
-| Refill events align to the requested line. | Beat indexing bugs often show only on line offsets. | Refill event plus readback coverage. |
-| Stall windows keep metadata/data stable. | A short architectural readback can miss a handshake stability bug. | Stall-tagged transactions plus event-level scoreboard failure. |
-| Scoreboard failures are classified before patching. | A quick fix can hide a scoreboard bug or stimulus bug. | Review journal and fault JSON artifacts. |
+| masked write 保留未选中字节 | store 在选中字节正确时仍可能污染邻近 byte lane | 对 reference memory 做 readback 比对 |
+| dirty victim writeback 先于 replacement 完成 | end-state data 可能在 refill 成功后仍丢失 | final memory comparison 与 writeback event coverage |
+| replacement 在 same-set pressure 下轮转 | 普通随机流不一定触发 replacement state bug | same-set constrained stream 与 eviction-address event comparison |
+| refill event 对齐目标 line | beat indexing bug 常在 line offset 下出现 | refill event 与 readback coverage |
+| stall window 保持 metadata/data 稳定 | 短 architectural readback 可能漏掉 handshake stability bug | stall-tagged transaction 与 event-level scoreboard failure |
+| failure 先分类再修补 | 直接 patch 容易掩盖 scoreboard 或 stimulus bug | review journal 与 fault JSON artifact |
 
-## Planned Toffee Mapping
+## Toffee 映射方式
 
-The Python harness maps cleanly to the final Toffee components:
+Python harness 与 Toffee 组件的对应关系：
 
-- `Transaction` becomes the generator item.
-- `CacheModel` becomes the reference model.
-- cache events become monitor observations from request, response, refill, and
-  writeback channels.
-- `VerificationRunner` becomes the regression wrapper that stores seed, coverage,
-  and failure artifacts.
+- `Transaction` 对应 generator item。
+- `CacheModel` 对应 reference model。
+- cache event 对应 request、response、refill、writeback channel 上的 monitor observation。
+- `VerificationRunner` 对应 regression wrapper，负责保存 seed、coverage 和 failure artifact。
 
-The rule I will keep during the RTL step: no coverpoint is counted unless there
-is also an observable scoreboard or monitor check behind it.
+RTL 路径沿用同一条规则：没有 scoreboard 或 monitor 观察支撑的 coverpoint 不计入覆盖。

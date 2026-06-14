@@ -41,9 +41,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         payload = {
             "status": "missing_upstream",
             "layout": _public_layout(layout),
-            "next_command": (
-                "python scripts/fetch_upstream_example.py --lock upstream.lock.json "
-                "--dest third_party/Example-NutShellCache"
+            "dependency_note": (
+                "未找到 Example-NutShellCache 工作目录；先运行 "
+                "`python scripts/fetch_upstream_example.py --lock upstream.lock.json "
+                "--dest third_party/Example-NutShellCache` 拉取锁定版本。"
             ),
         }
         _write_outputs(output, markdown, payload)
@@ -61,11 +62,14 @@ def main(argv: Optional[List[str]] = None) -> int:
             "python_harness": result.to_dict(),
             "toffee_cases_preview": to_toffee_cases(transactions[:8]),
             "rtl_toffee_measured_coverage": None,
-            "next_command": "Install Picker, Toffee, Toffee-Test, and make; then rerun scripts/run_nutshell_smoke.py.",
-            "note": "The Python harness completed; RTL smoke is waiting on local integration dependencies.",
+            "dependency_note": (
+                "本机缺少 Picker、Toffee、Toffee-Test 或 make；Python harness 已完成，"
+                "RTL smoke 需要依赖齐全后运行。"
+            ),
+            "note": "Python harness 已完成；RTL smoke 当前只记录本机集成依赖状态。",
         }
         _write_outputs(output, markdown, payload)
-        print(payload["next_command"], file=sys.stderr)
+        print(payload["dependency_note"], file=sys.stderr)
         return 2
 
     make_results = {
@@ -80,7 +84,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "toffee_cases_preview": to_toffee_cases(transactions[:8]),
         "make_results": make_results,
         "rtl_toffee_measured_coverage": None,
-        "note": "RTL coverage remains separate from the Python harness result until the upstream test exports measured coverage.",
+        "note": "RTL 覆盖率与 Python harness 结果分开记录；上游测试导出测量数据后再写入该字段。",
     }
     _write_outputs(output, markdown, payload)
     print(f"wrote {output}")
@@ -104,29 +108,29 @@ def _public_layout(layout) -> Dict[str, object]:
 
 def _render_markdown(payload: dict) -> str:
     lines = [
-        "# CacheSage-UC NutShell Smoke",
+        "# CacheSage-UC NutShell Smoke 记录",
         "",
-        f"- Status: `{payload['status']}`",
+        f"- 状态：`{payload['status']}`",
     ]
     layout = payload.get("layout", {})
     if layout:
-        lines.append(f"- Upstream root: `{layout.get('root')}`")
-        lines.append(f"- Missing paths: {', '.join(layout.get('missing_paths', [])) or 'none'}")
+        lines.append(f"- 上游目录：`{layout.get('root')}`")
+        lines.append(f"- 缺失路径：{', '.join(layout.get('missing_paths', [])) or '无'}")
     if "python_harness" in payload:
         harness = payload["python_harness"]
         lines.append(
-            f"- Python harness: {'PASS' if harness['passed'] else 'FAIL'}, "
-            f"{harness['coverage']['covered']}/{harness['coverage']['total']} coverpoints"
+            f"- Python harness：{'通过' if harness['passed'] else '失败'}，"
+            f"{harness['coverage']['covered']}/{harness['coverage']['total']} 个 coverpoint"
         )
     if "missing_dependencies" in payload:
-        lines.append(f"- Missing dependencies: {', '.join(payload['missing_dependencies'])}")
+        lines.append(f"- 缺失依赖：{', '.join(payload['missing_dependencies'])}")
     if "make_results" in payload:
         for target, result in payload["make_results"].items():
             lines.append(f"- `make {target}`: exit {result['returncode']}")
-    if "next_command" in payload:
-        lines.append(f"- Next command: `{payload['next_command']}`")
+    if "dependency_note" in payload:
+        lines.append(f"- 依赖说明：{payload['dependency_note']}")
     if "note" in payload:
-        lines.append(f"- Note: {payload['note']}")
+        lines.append(f"- 记录说明：{payload['note']}")
     lines.append("")
     return "\n".join(lines)
 

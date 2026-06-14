@@ -1,63 +1,52 @@
-# CacheSage-UC Verification Plan
+# CacheSage-UC 验证计划
 
-This document is the working verification plan for the NutShell Cache target.
-It is specific about the cache behavior being checked because a generic
-read/write random test is too weak for this track.
+本文档记录 NutShell Cache 目标的工作验证计划。重点不是把读写事务随机堆大，而是把 cache 行为、不变量、观测点和可复现命令写清楚。
 
-## Scope
+## 范围说明
 
-- Picker exposes the RTL as a Python-drivable DUT.
-- Toffee organizes driver, monitor, reference model, scoreboard, and coverage.
-- UCAgent is used for draft stimulus, coverage-hole triage, and failing-seed explanation.
-- Human review owns cache invariants, scoreboard rules, and evidence wording.
+- Picker 用于把 RTL 暴露为 Python 可驱动的 DUT。
+- Toffee 组织 driver、monitor、reference model、scoreboard 和 coverage。
+- UCAgent 用于草案生成、coverage hole 分析和 failing seed 解释。
+- 人工复核负责确认 cache invariant、scoreboard 规则和报告口径。
 
-The plan avoids claiming multi-core coherence unless the target RTL and contest
-materials expose that interface clearly. Replacement, dirty eviction, byte masks,
-and stall stability are high priority because shallow random tests often
-miss them.
+本计划不扩展到未暴露接口的多核一致性场景。当前优先级放在 replacement、dirty eviction、byte mask、stall stability 和 reset recovery 上，因为这些路径容易被浅层随机测试漏掉。
 
-## Scenario Matrix
+## 场景矩阵
 
-| ID | Scenario | Primary risk | Human check |
+| ID | 场景 | 主要风险 | 人工复核点 |
 | --- | --- | --- | --- |
-| S01 | Read/write smoke path | Driver or monitor wiring is wrong. | Compare every response with the reference memory model. |
-| S02 | Read miss and refill | Refill order or replay response is wrong. | Check refill beat alignment and response timing. |
-| S03 | Write miss allocate | Masked writes corrupt untouched bytes. | Read back full word and byte lanes after store. |
-| S04 | Dirty eviction integrity | Dirty victim is dropped during replacement. | Require writeback before installing the new line. |
-| S05 | Clean eviction silence | Clean victim creates a false writeback. | Monitor writeback channel quietness. |
-| S06 | Replacement stress | Replacement state sticks or rotates incorrectly. | Bias addresses into one set and replay failing seeds. |
-| S07 | Stall and back-pressure | Metadata changes while ready is low. | Assert request fields stay stable across stalls. |
-| S08 | Reset recovery | Transient miss state leaks past reset. | Reset inside miss/refill windows, then run a clean smoke path. |
-| S09 | Boundary address aliasing | Tag/index/offset slicing aliases neighbors. | Alternate adjacent lines and byte masks. |
-| S10 | Long random regression | Rare interleavings escape directed tests. | Use seed, address distribution, write ratio, and stall knobs. |
-| S11 | Mask and offset matrix | Full-word traffic hides byte-lane bugs. | Mix low mask, high mask, full mask, and non-zero word offsets. |
-| S12 | Event-level replacement audit | Data still matches while policy state drifts. | Compare eviction address, writeback, refill, and stall events. |
+| S01 | 读写冒烟路径 | driver 或 monitor 连接错误 | 每个 response 都与 reference memory model 比对 |
+| S02 | read miss 与 refill | refill 顺序或 replay response 错误 | 检查 refill beat alignment 与 response timing |
+| S03 | write miss allocate | masked write 污染未选中字节 | store 后 readback 全 word 和 byte lane |
+| S04 | dirty eviction integrity | 脏 victim 在 replacement 中丢失 | 要求 writeback 先于新 line 安装 |
+| S05 | clean eviction 静默性 | clean victim 产生错误 writeback | 观察 writeback channel 是否保持安静 |
+| S06 | replacement 压力 | replacement 状态卡住或轮转错误 | 地址偏向同一 set，并保留失败 seed |
+| S07 | stall 与 back-pressure | ready 为低时 metadata 漂移 | 断言 request field 在 stall 中保持稳定 |
+| S08 | reset recovery | miss/refill 瞬态状态穿过 reset | reset 打在 miss/refill window 内，再跑干净 smoke path |
+| S09 | 边界地址 aliasing | tag/index/offset slicing 混淆相邻 line | 相邻 line 与 byte mask 交替访问 |
+| S10 | 长随机回归 | 稀有 interleaving 逃过定向测试 | 固定 seed、地址分布、读写比例和 stall knobs |
+| S11 | mask 与 offset 矩阵 | full-word traffic 掩盖 byte-lane bug | 混合 low mask、high mask、full mask 和非零 word offset |
+| S12 | 事件级 replacement 审计 | 数据仍匹配但 policy state 漂移 | 比对 eviction address、writeback、refill 和 stall events |
 
-## Planned Components
+## 组件分工
 
-- `CacheDriver`: sends load/store requests with stable transaction IDs.
-- `CacheMonitor`: records request, response, refill, writeback, stall, and reset-window events.
-- `ReferenceMemory`: byte-addressable model used by the scoreboard.
-- `CacheScoreboard`: checks data, event order, dirty writeback, replacement, and mask semantics.
-- `CoverageCollector`: records functional coverpoints and produces JSON evidence.
-- `ReviewJournal`: stores prompt rounds, rejected drafts, and human fixes.
+- `CacheDriver`：发送 load/store request，并保持 transaction ID 可追踪。
+- `CacheMonitor`：记录 request、response、refill、writeback、stall 和 reset-window event。
+- `ReferenceMemory`：scoreboard 使用的 byte-addressable reference model。
+- `CacheScoreboard`：检查数据、事件顺序、dirty writeback、replacement 和 mask 语义。
+- `CoverageCollector`：记录功能覆盖点并输出 JSON 证据。
+- `ReviewJournal`：保存 prompt 轮次、草案问题和人工修正。
 
-The current repository contains both the evidence model and an executable Python
-scoreboard rehearsal. The same interface is now prepared for the actual
-Picker/Toffee DUT through `src/cachesage_uc/adapters/`.
+当前仓库已经包含证据模型和可执行 Python scoreboard rehearsal。同一套事务接口通过 `src/cachesage_uc/adapters/` 对齐 Picker/Toffee DUT 路径。
 
-## Coverage Policy
+## 覆盖策略
 
-Coverage is counted only when a test both stimulates the behavior and checks the
-observable effect. A random stream that happens to cause a replacement is not
-credited unless the scoreboard also proves the victim behavior.
+只有同时刺激到目标行为，并由 scoreboard 或 monitor 观察到对应效果时，coverpoint 才计入。比如随机流碰巧触发 replacement 并不自动算覆盖，除非同时证明 victim 行为正确。
 
-The current Python harness tracks 23 functional coverpoints. The local gate is:
+当前 Python harness 跟踪 23 个功能覆盖点，本地复现命令为：
 
 ```powershell
 python -m cachesage_uc.cli run --seed 11 --count 96 --output reports/sample-run-seed11.json
 ```
 
-That run is expected to reach at least 90% Python harness coverage. RTL/Toffee
-functional coverage is reported separately after the Picker-generated DUT is
-available.
+该 run 的目标阈值为 Python harness 覆盖率不低于 90%。RTL/Toffee 实测覆盖率在 Picker-generated DUT 路径运行后独立记录。

@@ -1,41 +1,31 @@
 # CacheSage-UC
 
-CacheSage-UC is a coverage-guided verification project for the UCAgent NutShell
-Cache track. It keeps the verification work reviewable: cache invariants are
-written down, the Python harness is reproducible, and RTL/Toffee results are
-reported separately from the local model results.
+CacheSage-UC 面向 UCAgent NutShell Cache 验证任务，目标是把 cache 验证从“随机跑一批读写”推进到可复盘的工程流程：场景先写清楚，事务能复现，scoreboard 有明确不变量，报告把 Python harness 数据和 RTL/Toffee 数据分开记录。
 
-中文简介：CacheSage-UC 面向 NutShell Cache 验证场景，围绕 Picker、Toffee 和
-Python harness 建立一套可复现的验证记录。当前仓库已经包含可运行的参考 Cache
-模型、Scoreboard、CRV 事务生成、5 类故障注入、23 个功能覆盖点、上游
-Example-NutShellCache 锁定脚本，以及人工复盘记录。
+当前仓库包含可运行的 Python 验证核心、23 个功能覆盖点、5 类确定性故障注入、NutShell 上游示例工程锁定脚本、Picker/Toffee 适配边界，以及人工复核记录。项目不声称已经发现真实 NutShell RTL bug；现有 fault artifact 用于证明 injected fault 能被 harness 和 scoreboard 检出。
 
-## Current Engineering Status
+## 当前交付状态
 
-| Layer | Status | Evidence |
+| 层次 | 状态 | 证据 |
 | --- | --- | --- |
-| Python verification harness | Runnable | `python -m cachesage_uc.cli run --seed 11 --count 96 --output reports/sample-run-seed11.json` |
-| Functional coverage model | 23 coverpoints | read/write hit, refill, dirty/clean eviction, mask, stall, reset, same-set pressure |
-| Fault injection | 5 deterministic modes | `drop_dirty_writeback`, `ignore_write_mask`, `stuck_replacement`, `refill_shift`, `unstable_under_stall` |
-| NutShell upstream alignment | Pinned, not vendored | `upstream.lock.json`, `scripts/fetch_upstream_example.py` |
-| Picker/Toffee bridge | Adapter boundary present | `src/cachesage_uc/adapters/`, `scripts/run_nutshell_smoke.py` |
-| RTL-measured coverage | Not claimed yet | Reported only after local Picker/Toffee dependencies are installed |
+| Python 验证核心 | 可运行 | `python -m cachesage_uc.cli run --seed 11 --count 96 --output reports/sample-run-seed11.json` |
+| 功能覆盖模型 | 23 个 coverpoint | read/write hit、refill、dirty/clean eviction、mask、stall、reset、same-set pressure |
+| 故障注入 | 5 个确定性模式 | `drop_dirty_writeback`、`ignore_write_mask`、`stuck_replacement`、`refill_shift`、`unstable_under_stall` |
+| NutShell 上游对齐 | 锁定版本，不 vendoring | `upstream.lock.json`、`scripts/fetch_upstream_example.py` |
+| Picker/Toffee 边界 | 已有适配层 | `src/cachesage_uc/adapters/`、`scripts/run_nutshell_smoke.py` |
+| RTL/Toffee 实测覆盖率 | 单独记录 | 本机依赖齐全并运行 smoke 后写入，不与 Python harness 覆盖率混写 |
 
-This project does not claim that the real NutShell RTL has a bug. The current
-fault results are injected-fault checks used to validate the harness and
-scoreboard.
+## 验证能力
 
-## Verification Capability
-
-| Area | Current implementation |
+| 方向 | 当前实现 |
 | --- | --- |
-| Cache behavior | Read/write hit, miss/refill, write-allocate, byte masks, dirty and clean eviction. |
-| Control stress | Same-set pressure, replacement rotation, stall windows, reset recovery, and boundary offsets. |
-| Scoreboard | Read data, final backing memory, and event signature comparisons. |
-| Review trail | `review_journal.jsonl` and `docs/review-catalog.md` record draft issues and human corrections. |
-| Integration boundary | Upstream layout inspection plus Toffee-style request case mapping. |
+| cache 数据路径 | read/write hit、miss/refill、write-allocate、byte mask、dirty 与 clean eviction |
+| 控制路径压力 | same-set pressure、replacement rotation、stall window、reset recovery、boundary offset |
+| Scoreboard | 比对 read data、最终 backing memory、writeback/refill/stall 等事件签名 |
+| 复核证据 | `review_journal.jsonl` 和 `docs/review-catalog.md` 记录草案问题、复核发现和修正方式 |
+| 集成边界 | 检查上游 Example-NutShellCache 结构，并把事务流映射成 Toffee-style request case |
 
-## Reproducible Commands
+## 复现命令
 
 ```powershell
 python -m pip install -e .
@@ -46,10 +36,9 @@ python -m cachesage_uc.cli run --seed 11 --count 96 --output reports/sample-run-
 python scripts/generate_report.py --output reports/initial-verification-report.md
 ```
 
-The current tooling layer uses only the Python standard library. Picker/Toffee
-are needed only for the RTL smoke path.
+基础验证层只使用 Python 标准库。Picker、Toffee、Toffee-Test 和 make 只用于 RTL smoke 路径。
 
-## NutShell / Toffee Preparation
+## NutShell / Toffee 环境说明
 
 ```powershell
 python scripts/fetch_upstream_example.py --lock upstream.lock.json --dest third_party/Example-NutShellCache --dry-run
@@ -57,30 +46,21 @@ python scripts/fetch_upstream_example.py --lock upstream.lock.json --dest third_
 python scripts/run_nutshell_smoke.py --upstream third_party/Example-NutShellCache
 ```
 
-If the upstream example or local Picker/Toffee dependencies are missing,
-`run_nutshell_smoke.py` exits with a clear setup hint and writes a
-machine-readable status file. This does not block the base Python regression.
+如果本机没有上游目录或缺少 Picker/Toffee 相关依赖，`run_nutshell_smoke.py` 会写出 machine-readable 状态文件，并保持 Python harness 回归可独立复现。
 
-## Repository Layout
+## 仓库结构
 
 ```text
-src/cachesage_uc/        Verification core, evidence model, CLI, and adapters.
-tests/                   Standard-library regression tests.
-docs/                    Verification plan, upstream survey, Toffee flow, review notes.
-examples/                Machine-readable sample evidence.
-reports/                 Generated and curated verification records.
-scripts/                 Report, upstream fetch, and smoke helpers.
-review_journal.jsonl     Prompt / draft / review correction records.
-upstream.lock.json       Pinned Example-NutShellCache source identity.
+src/cachesage_uc/        验证核心、证据模型、CLI 和适配层
+tests/                   标准库 unittest 回归
+docs/                    验证计划、上游调研、Toffee 流程、复核记录
+examples/                机器可读样例证据
+reports/                 生成记录和样例验证结果
+scripts/                 报告生成、上游拉取和 smoke helper
+review_journal.jsonl     prompt / draft / review correction 记录
+upstream.lock.json       Example-NutShellCache 固定来源信息
 ```
 
-## Next Integration Checkpoint
+## 许可证
 
-The next checkpoint is to run the same scenario matrix against the
-Picker-generated NutShell Cache Python DUT, then add RTL/Toffee measured
-coverage and waveform-backed failure artifacts. Until that gate runs, the report
-keeps Python harness coverage and RTL coverage in separate rows.
-
-## License
-
-Apache License 2.0. See [LICENSE](LICENSE).
+Apache License 2.0，见 [LICENSE](LICENSE)。

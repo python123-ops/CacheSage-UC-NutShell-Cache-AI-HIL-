@@ -16,8 +16,9 @@
 | --- | --- |
 | 上游源码 | 通过 `scripts/fetch_upstream_example.py` 按 `upstream.lock.json` 拉取到 `third_party/Example-NutShellCache` |
 | Picker/Toffee 依赖 | 由 `scripts/run_nutshell_smoke.py` 写入 JSON/Markdown 状态 |
-| RTL/Toffee 覆盖率 | 与 Python harness 覆盖率分栏记录，不混作同一数据源 |
-| waveform 或 transaction trace | fault artifact 先保存 JSON 摘要，RTL smoke 运行后再附加波形来源 |
+| RTL smoke artifact | 记录 waveform、generated DUT、coverage candidate manifest，不提交大型二进制 |
+| RTL code coverage | 可导出则写 LCOV 摘要；不可导出则写 `not_exported` 原因 |
+| waveform 或 transaction trace | fault artifact 先保存 JSON 摘要，RTL smoke manifest 再记录本地产物来源 |
 | 复核记录 | 新增 prompt round 时继续写入 `review_journal.jsonl` |
 
 ## 非声明项

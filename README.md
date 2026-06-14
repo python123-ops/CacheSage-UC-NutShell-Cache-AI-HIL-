@@ -1,6 +1,6 @@
 # CacheSage-UC
 
-CacheSage-UC 面向 UCAgent NutShell Cache 验证任务，目标是把 cache 验证从“随机跑一批读写”推进到可复盘的工程流程：场景先写清楚，事务能复现，scoreboard 有明确不变量，报告把 Python harness 数据和 RTL/Toffee 数据分开记录。
+CacheSage-UC 面向 UCAgent NutShell Cache 验证任务，目标是把 cache 验证从“随机跑一批读写”推进到可复盘的工程流程：场景先写清楚，事务能复现，scoreboard 有明确不变量，报告把 Python harness 数据、RTL smoke artifact 和 RTL code coverage 状态分开记录。
 
 当前仓库包含可运行的 Python 验证核心、23 个功能覆盖点、5 类确定性故障注入、NutShell 上游示例工程锁定脚本、Picker/Toffee 适配边界，以及人工复核记录。项目不声称已经发现真实 NutShell RTL bug；现有 fault artifact 用于证明 injected fault 能被 harness 和 scoreboard 检出。
 
@@ -13,7 +13,8 @@ CacheSage-UC 面向 UCAgent NutShell Cache 验证任务，目标是把 cache 验
 | 故障注入 | 5 个确定性模式 | `drop_dirty_writeback`、`ignore_write_mask`、`stuck_replacement`、`refill_shift`、`unstable_under_stall` |
 | NutShell 上游对齐 | 锁定版本，不 vendoring | `upstream.lock.json`、`scripts/fetch_upstream_example.py` |
 | Picker/Toffee 边界 | 已有适配层 | `src/cachesage_uc/adapters/`、`scripts/run_nutshell_smoke.py` |
-| RTL/Toffee 实测覆盖率 | 单独记录 | 本机依赖齐全并运行 smoke 后写入，不与 Python harness 覆盖率混写 |
+| RTL smoke artifact | 已收集 manifest | waveform、generated DUT、coverage candidate 只记录路径和大小，不提交大型二进制 |
+| RTL code coverage | 单独记录 | 可导出则写 LCOV 摘要；不可导出则写 `not_exported` 原因，不与 Python harness 覆盖率混写 |
 
 ## 验证能力
 

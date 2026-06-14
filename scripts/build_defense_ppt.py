@@ -79,6 +79,8 @@ def make_terminal_assets(data: dict) -> None:
     smoke = data["smoke"]
     cov = smoke["python_harness"]["coverage"]
     make_results = smoke.get("make_results", {})
+    artifacts = smoke.get("rtl_artifacts", {})
+    rtl_code_coverage = smoke.get("rtl_code_coverage", {})
     env = data["env"]
     sample = data["sample"]
 
@@ -104,6 +106,8 @@ def make_terminal_assets(data: dict) -> None:
             f"make test: exit {make_results.get('test', {}).get('returncode')}",
             "pytest: test/test_smoke.py::test_smoke PASSED",
             f"Python harness: {cov['covered']}/{cov['total']} coverpoints, {cov['percent']:.2f}%",
+            f"RTL artifacts: {artifacts.get('status', 'not_recorded')}, count={artifacts.get('count', 0)}",
+            f"RTL code coverage: {rtl_code_coverage.get('status', 'not_recorded')}",
         ],
     )
     events = sample["event_counts"]
@@ -206,12 +210,12 @@ def slide_cover(slide, data: dict) -> None:
             ("23/23", "Python harness 覆盖点"),
             ("5", "确定性 injected fault"),
             ("2/2", "make gen_dut / make test"),
-            ("1 passed", "上游 pytest smoke"),
+            (str(data["smoke"].get("rtl_artifacts", {}).get("count", 0)), "RTL artifact manifest"),
         ],
         columns=2,
     )
     add_terminal(slide, ASSETS / "terminal-smoke.png", 6.75, 2.8, 5.85, 2.48)
-    add_text(slide, 0.72, 6.65, 6.8, 0.24, "证据边界：smoke 已跑通；RTL measured coverage 尚未由上游 flow 导出。", 9.5, MUTED)
+    add_text(slide, 0.72, 6.65, 7.3, 0.24, "证据边界：Python functional coverage 与 RTL smoke artifact/code coverage 分栏记录。", 9.5, MUTED)
 
 
 def slide_evidence_map(slide, data: dict) -> None:
@@ -275,8 +279,8 @@ def slide_smoke_flow(slide, data: dict) -> None:
         4.25,
         [
             "`rtl_smoke_complete` 来自真实命令返回值。",
-            "make stdout/stderr 已保存到 JSON 摘要。",
-            "RTL measured coverage 仍为空，等待 coverage flow 导出。",
+            "waveform / generated DUT / coverage candidate 已写入 manifest。",
+            "RTL code coverage 成功则写 LCOV 摘要，失败则写 not_exported 原因。",
         ],
         font_size=12.2,
     )
@@ -345,8 +349,8 @@ def slide_boundary(slide, data: dict) -> None:
         4.85,
         [
             "已完成：Python harness、fault 检出、Linux Picker/Toffee smoke。",
-            "未声称：真实 RTL bug、RTL measured coverage。",
-            "后续条件：waveform、coverage export、更长随机回归。",
+            "未声称：真实 RTL bug、RTL functional coverage 已闭合。",
+            "后续条件：更长随机回归、waveform 截图、真实 RTL functional coverage。",
         ],
         font_size=11.4,
     )

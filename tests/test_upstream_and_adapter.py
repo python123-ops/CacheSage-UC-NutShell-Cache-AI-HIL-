@@ -129,9 +129,47 @@ class NutShellAdapterTests(unittest.TestCase):
             payload = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(payload["status"], "missing_dependencies")
             self.assertIn("picker", payload["missing_dependencies"])
+            self.assertEqual(payload["rtl_artifacts"]["status"], "not_collected")
+            self.assertEqual(payload["rtl_code_coverage"]["status"], "not_exported")
             self.assertIn("dependency_note", payload)
             self.assertNotIn("next_command", payload)
             self.assertIn("Picker", payload["dependency_note"])
+
+    def test_rtl_artifact_manifest_records_waveform_and_generated_dut(self):
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("run_nutshell_smoke", ROOT / "scripts" / "run_nutshell_smoke.py")
+        module = importlib.util.module_from_spec(spec)
+        self.assertIsNotNone(spec.loader)
+        spec.loader.exec_module(module)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            upstream = root / "third_party" / "Example-NutShellCache"
+            (upstream / "Cache" / "python").mkdir(parents=True)
+            (upstream / "Cache" / "python" / "dut.py").write_text("# generated dut\n", encoding="utf-8")
+            (upstream / "Cache" / "signals.json").write_text("{}", encoding="utf-8")
+            (upstream / "cache.fst").write_bytes(b"fst")
+            (upstream / "coverage.dat").write_text("verilator coverage placeholder\n", encoding="utf-8")
+
+            manifest = module._collect_rtl_artifacts(upstream)
+            coverage = module._detect_rtl_code_coverage(
+                upstream=upstream,
+                coverage_info=root / "reports" / "rtl-code-coverage.info",
+                enabled=False,
+                smoke_complete=True,
+            )
+
+        kinds = {item["kind"] for item in manifest["items"]}
+        paths = {item["upstream_path"] for item in manifest["items"]}
+        self.assertEqual(manifest["status"], "collected")
+        self.assertIn("waveform", kinds)
+        self.assertIn("coverage_candidate", kinds)
+        self.assertIn("generated_dut", kinds)
+        self.assertIn("cache.fst", paths)
+        self.assertIn("Cache/python/dut.py", paths)
+        self.assertEqual(coverage["status"], "not_exported")
+        self.assertIn("disabled", coverage["reason"])
 
 
 class ReviewEvidenceTests(unittest.TestCase):

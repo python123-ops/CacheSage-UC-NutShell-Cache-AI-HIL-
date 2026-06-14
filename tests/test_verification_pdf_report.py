@@ -55,7 +55,8 @@ class VerificationPdfReportTests(unittest.TestCase):
                 self.assertIn("100.00%", text)
                 self.assertIn("drop_dirty_writeback", text)
                 self.assertIn("unstable_under_stall", text)
-                self.assertIn("RTL/Toffee measured coverage", text)
+                self.assertIn("RTL artifact", text)
+                self.assertIn("RTL code coverage", text)
                 self.assertIn("不声称已发现真实 NutShell RTL bug", text)
                 self.assertNotIn("Why This Project", text)
                 for phrase in BANNED_REPORT_PHRASES:

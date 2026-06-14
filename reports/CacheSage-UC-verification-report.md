@@ -7,7 +7,7 @@ GitHub：github.com/python123-ops/CacheSage-UC
 
 ## 摘要
 
-CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了一套可复现的 cache 验证原型。当前证据包括 Python harness、Generator/CRV、Scoreboard、Coverage、5 类 injected fault、人工复核记录，以及 Linux 环境下的 Picker/Toffee/NutShell smoke。Python harness 在 seed 11、96 个 transaction 上达到 `23/23`，即 `100.00%` 覆盖率。报告仍将 smoke 通过与 RTL measured coverage 分开记录，不声称已发现真实 NutShell RTL bug。
+CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了一套可复现的 cache 验证原型。当前证据包括 Python harness、Generator/CRV、Scoreboard、Coverage、5 类 injected fault、人工复核记录，以及 Linux 环境下的 Picker/Toffee/NutShell smoke。Python harness 在 seed 11、96 个 transaction 上达到 `23/23`，即 `100.00%` 覆盖率。报告将 Python functional coverage、RTL smoke artifact 和 RTL code coverage 状态分栏记录，不声称已发现真实 NutShell RTL bug。
 
 关键词：UCAgent；NutShell Cache；Scoreboard；约束随机；故障注入；覆盖率
 
@@ -26,7 +26,9 @@ CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了一套可复现的 
 - Python harness 覆盖率：`23/23`，`100.00%`。
 - 执行规模：seed 11，96 个 transaction。
 - 事件计数：dirty_eviction=33, eviction=51, hit=41, masked_write=24, miss=55, read=50, refill=55, reset_window=1, stall_hold=2, write=46, writeback=33。
-- Picker/Toffee/NutShell smoke：Linux 环境已完成上游 `make gen_dut` 与 `make test` smoke；RTL/Toffee measured coverage 尚未由上游测试导出。
+- Picker/Toffee/NutShell smoke：Linux 环境已完成上游 `make gen_dut` 与 `make test` smoke；已收集 7 个 RTL artifact manifest，包含 waveform 1 个、coverage candidate 2 个、generated DUT 4 个；已导出 RTL code coverage LCOV 摘要，line 1162/1454 (79.92%)。
+- RTL artifact manifest：已收集 7 个 RTL artifact manifest，包含 waveform 1 个、coverage candidate 2 个、generated DUT 4 个。
+- RTL code coverage：已导出 RTL code coverage LCOV 摘要，line 1162/1454 (79.92%)。
 
 ## 故障注入记录
 
@@ -44,12 +46,14 @@ CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了一套可复现的 
 | --- | --- | --- | --- |
 | RV-001 | 替换策略和 dirty victim 没有被单独拆开，容易把最关键的数据一致性问题藏在随机流里。 | 补入 directed dirty eviction、clean eviction、same-set pressure，并让 scoreboard 检查 writeback 事件。 | 新增替换与脏写回覆盖 |
 | RV-002 | 均匀分布很难快速打到同 set 冲突，也不利于复现 replacement failure。 | 将 seed 前缀做成 directed coverage spine，随机段再混入 word offset、mask 和多 set 访问。 | 新增 same-set、mask、offset 覆盖 |
-| RV-003 | 这会让作品看起来像普通脚本，缺少 cache 控制路径和时序保持类风险。 | 补充 stuck_replacement、refill_shift、unstable_under_stall，并为每个 fault 固定 deterministic seed。 | fault mode 从 2 类扩展到 5 类 |
-| RV-004 | 这个口径会在评审追问 Toffee 证据时露怯。 | 报告拆成 planned coverage、Python harness measured coverage、RTL/Toffee measured coverage 三栏，真实 RTL 暂不夸大。 | 报告证据分栏 |
+| RV-003 | 这会让验证深度不足，缺少 cache 控制路径和时序保持类风险。 | 补充 stuck_replacement、refill_shift、unstable_under_stall，并为每个 fault 固定 deterministic seed。 | fault mode 从 2 类扩展到 5 类 |
+| RV-004 | 这个口径在评审追问 Toffee 证据时会出现证据不足。 | 报告拆成 planned coverage、Python harness measured coverage、RTL smoke artifact、RTL code coverage 和后续 RTL functional coverage 几类证据，真实 RTL 暂不夸大。 | 报告证据分栏 |
 | RV-005 | 没有读取上游工程结构就定义接口，后续很可能与 Picker/Toffee 真实路径对不上。 | 锁定 XS-MLVP/Example-NutShellCache commit，新增 fetch 脚本和 layout inspector，只在本地拉取第三方源码。 | 集成边界可复现 |
 
 ## 集成边界
 
 Linux 环境依赖齐全；上游 make gen_dut 与 make test smoke 已通过。
+
+RTL artifact manifest 与 RTL code coverage 只作为 smoke-level RTL 侧证据；Python harness 的 `23/23` 是功能覆盖率，不与 RTL code coverage 混写。
 
 本报告将 Python harness 结果与 RTL/Toffee 结果分开记录。上述 fault artifact 仅说明 injected fault 能被 harness 和 scoreboard 检出，不代表真实 NutShell RTL 存在对应缺陷。

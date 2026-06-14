@@ -243,7 +243,7 @@ def build_default_bundle() -> EvidenceBundle:
         Intervention(
             "报告口径",
             "初版报告把计划覆盖率写得像已经完成的 RTL 覆盖率。",
-            "改为分别记录 planned coverpoints、Python harness 数据和 RTL/Toffee 实测数据。",
+            "改为分别记录 planned coverpoints、Python harness 数据、RTL smoke artifact、RTL code coverage 和后续 RTL functional coverage。",
             "公开材料可以说明目标，但覆盖率证据必须可审计。",
         ),
     ]
@@ -287,7 +287,7 @@ def render_markdown_report(bundle: EvidenceBundle) -> str:
         "# CacheSage-UC 验证记录",
         "",
         "本记录对应 UCAgent NutShell Cache 方向的当前工程状态。文档把计划覆盖点、Python harness 实测结果、"
-        "RTL/Toffee 环境记录分开描述，避免把尚未运行的 RTL 数据写成已经完成的结论。",
+        "RTL smoke artifact 和 RTL code coverage 状态分开描述，避免把不同来源的数据混成同一个结论。",
         "",
         "## 证据边界",
         "",
@@ -295,7 +295,8 @@ def render_markdown_report(bundle: EvidenceBundle) -> str:
         "| --- | --- | --- |",
         f"| 计划功能覆盖点 | 已定义 | {summary.total} 个 coverpoint，覆盖 {len(bundle.plan.scenarios)} 个场景 |",
         f"| Python harness 实测覆盖率 | 已测量 | seed 11、96 个 transaction，{smoke_result.coverage.covered}/{smoke_result.coverage.total} ({smoke_result.coverage.percent:.2f}%) |",
-        "| RTL/Toffee 实测覆盖率 | 环境记录 | 本机依赖齐全并运行 Picker/Toffee smoke 后单独记录 |",
+        "| RTL smoke artifact | 环境记录 | 由 `scripts/run_nutshell_smoke.py` 记录 waveform、generated DUT 和 coverage candidate manifest |",
+        "| RTL code coverage | 环境记录 | 可导出则写 LCOV 摘要；不可导出则写 `not_exported` 原因 |",
         "",
         "## 可执行 Harness 快照",
         "",

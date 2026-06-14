@@ -38,7 +38,8 @@ python scripts/run_nutshell_smoke.py --upstream third_party/Example-NutShellCach
 - inspected upstream layout；
 - seed 11、count 96 的 Python harness 结果；
 - Toffee-style request case 预览；
-- `rtl_toffee_measured_coverage: null`，用于明确当前记录不把 RTL 覆盖率混入 Python harness 数据。
+- `rtl_artifacts`，记录 waveform、generated DUT、coverage candidate 的相对路径、大小和用途。
+- `rtl_code_coverage`，记录 Verilator/Picker code coverage 是否导出；成功时写 LCOV 摘要，失败时写 `not_exported` 原因。
 
 ## 覆盖率记录约定
 
@@ -48,6 +49,8 @@ CacheSage-UC 固定分成三类数据：
 | --- | --- |
 | planned coverage | `docs/verification-plan.md` 中定义的功能覆盖点 |
 | Python harness measured coverage | `VerificationRunner` 在 reference/candidate cache model 上测得的数据 |
-| RTL/Toffee measured coverage | Picker-generated DUT 运行后导出的 RTL 路径数据 |
+| RTL smoke artifact | Picker-generated DUT 运行后产生的 waveform、generated DUT 和 coverage candidate manifest |
+| RTL code coverage | Verilator/Picker coverage 数据可解析后导出的 smoke-level code coverage |
+| RTL functional coverage | 后续把当前 23 个 functional coverpoint 接入真实 DUT monitor 后再记录 |
 
 这个拆分让报告保持可复核：没有实测来源的数据不写成实测结论。

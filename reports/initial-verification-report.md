@@ -1,6 +1,6 @@
 # CacheSage-UC 验证记录
 
-本记录对应 UCAgent NutShell Cache 方向的当前工程状态。文档把计划覆盖点、Python harness 实测结果、RTL/Toffee 环境记录分开描述，避免把尚未运行的 RTL 数据写成已经完成的结论。
+本记录对应 UCAgent NutShell Cache 方向的当前工程状态。文档把计划覆盖点、Python harness 实测结果、RTL smoke artifact 和 RTL code coverage 状态分开描述，避免把不同来源的数据混成同一个结论。
 
 ## 证据边界
 
@@ -8,7 +8,8 @@
 | --- | --- | --- |
 | 计划功能覆盖点 | 已定义 | 23 个 coverpoint，覆盖 12 个场景 |
 | Python harness 实测覆盖率 | 已测量 | seed 11、96 个 transaction，23/23 (100.00%) |
-| RTL/Toffee 实测覆盖率 | 环境记录 | 本机依赖齐全并运行 Picker/Toffee smoke 后单独记录 |
+| RTL smoke artifact | 环境记录 | 由 `scripts/run_nutshell_smoke.py` 记录 waveform、generated DUT 和 coverage candidate manifest |
+| RTL code coverage | 环境记录 | 可导出则写 LCOV 摘要；不可导出则写 `not_exported` 原因 |
 
 ## 可执行 Harness 快照
 
@@ -41,7 +42,7 @@
 | Scoreboard 设计 | 草稿 checker 只比对最终 read data，忽略 writeback order。 | 补上 scoreboard 约束：victim writeback 必须发生在 refill installation 之前。 | Cache 正确性不仅看最终内存内容，也要看关键事件顺序。 |
 | CRV 约束 | 第一版随机流使用均匀地址，很难快速打到 replacement pressure。 | 把地址生成偏向同一个 set，同时保留少量 full-range traffic。 | 有效覆盖来自成形随机和少量定向 invariant 的组合。 |
 | 失败分诊 | 初版分诊记录倾向于直接按 waveform 摘要修补 mismatch。 | 调整为先区分 scoreboard bug、DUT bug 或 stimulus bug，再决定修正位置。 | 补丁只有建立在可信工程诊断上才有意义。 |
-| 报告口径 | 初版报告把计划覆盖率写得像已经完成的 RTL 覆盖率。 | 改为分别记录 planned coverpoints、Python harness 数据和 RTL/Toffee 实测数据。 | 公开材料可以说明目标，但覆盖率证据必须可审计。 |
+| 报告口径 | 初版报告把计划覆盖率写得像已经完成的 RTL 覆盖率。 | 改为分别记录 planned coverpoints、Python harness 数据、RTL smoke artifact、RTL code coverage 和后续 RTL functional coverage。 | 公开材料可以说明目标，但覆盖率证据必须可审计。 |
 
 ## 故障注入记录
 

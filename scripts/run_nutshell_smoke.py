@@ -6,6 +6,7 @@ import json
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -25,6 +26,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--count", type=int, default=96)
     parser.add_argument("--output", default="reports/nutshell-smoke.json")
     parser.add_argument("--markdown", default="reports/nutshell-smoke.md")
+    parser.add_argument("--rtl-coverage-info", default="reports/rtl-code-coverage.info")
+    parser.add_argument("--collect-rtl-artifacts", dest="collect_rtl_artifacts", action="store_true", default=True)
+    parser.add_argument("--no-collect-rtl-artifacts", dest="collect_rtl_artifacts", action="store_false")
+    parser.add_argument("--try-rtl-code-coverage", dest="try_rtl_code_coverage", action="store_true", default=True)
+    parser.add_argument("--no-try-rtl-code-coverage", dest="try_rtl_code_coverage", action="store_false")
     return parser
 
 
@@ -33,6 +39,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     upstream = ROOT / args.upstream
     output = ROOT / args.output
     markdown = ROOT / args.markdown
+    coverage_info = ROOT / args.rtl_coverage_info
     output.parent.mkdir(parents=True, exist_ok=True)
     markdown.parent.mkdir(parents=True, exist_ok=True)
 
@@ -62,6 +69,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             "python_harness": result.to_dict(),
             "toffee_cases_preview": to_toffee_cases(transactions[:8]),
             "rtl_toffee_measured_coverage": None,
+            "rtl_artifacts": _empty_artifacts("依赖缺失，未运行 RTL smoke。"),
+            "rtl_code_coverage": _coverage_not_exported("依赖缺失，未运行 RTL code coverage 导出。"),
             "dependency_note": (
                 "本机缺少 Picker、Toffee、Toffee-Test 或 make；Python harness 已完成，"
                 "RTL smoke 需要依赖齐全后运行。"
@@ -77,6 +86,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         "test": _run_make(upstream, "test"),
     }
     rtl_status = "rtl_smoke_complete" if all(item["returncode"] == 0 for item in make_results.values()) else "rtl_smoke_failed"
+    rtl_artifacts = _collect_rtl_artifacts(upstream, enabled=args.collect_rtl_artifacts)
+    rtl_code_coverage = _detect_rtl_code_coverage(
+        upstream=upstream,
+        coverage_info=coverage_info,
+        enabled=args.try_rtl_code_coverage,
+        smoke_complete=rtl_status == "rtl_smoke_complete",
+    )
     payload = {
         "status": rtl_status,
         "layout": _public_layout(layout),
@@ -84,7 +100,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         "toffee_cases_preview": to_toffee_cases(transactions[:8]),
         "make_results": make_results,
         "rtl_toffee_measured_coverage": None,
-        "note": "RTL 覆盖率与 Python harness 结果分开记录；上游测试导出测量数据后再写入该字段。",
+        "rtl_artifacts": rtl_artifacts,
+        "rtl_code_coverage": rtl_code_coverage,
+        "note": "RTL artifact 与 code coverage 只作为 smoke-level 证据；Python harness functional coverage 仍单独记录。",
     }
     _write_outputs(output, markdown, payload)
     print(f"wrote {_display_path(output)}")
@@ -127,6 +145,14 @@ def _render_markdown(payload: dict) -> str:
     if "make_results" in payload:
         for target, result in payload["make_results"].items():
             lines.append(f"- `make {target}`: exit {result['returncode']}")
+    if "rtl_artifacts" in payload:
+        artifacts = payload["rtl_artifacts"]
+        lines.append(f"- RTL artifact manifest：{artifacts.get('status')}，记录 {artifacts.get('count', 0)} 个候选产物")
+        for item in artifacts.get("items", [])[:5]:
+            lines.append(f"  - `{item['path']}` ({item['kind']}, {item['bytes']} bytes)")
+    if "rtl_code_coverage" in payload:
+        coverage = payload["rtl_code_coverage"]
+        lines.append(f"- RTL code coverage：{coverage.get('status')}，{coverage.get('summary') or coverage.get('reason')}")
     if "dependency_note" in payload:
         lines.append(f"- 依赖说明：{payload['dependency_note']}")
     if "note" in payload:
@@ -163,6 +189,217 @@ def _run_make(upstream: Path, target: str) -> Dict[str, object]:
     }
 
 
+def _empty_artifacts(reason: str) -> Dict[str, object]:
+    return {
+        "status": "not_collected",
+        "reason": reason,
+        "count": 0,
+        "items": [],
+        "truncated": False,
+    }
+
+
+def _coverage_not_exported(reason: str, candidates: Optional[List[str]] = None, attempts: Optional[List[str]] = None) -> Dict[str, object]:
+    payload: Dict[str, object] = {
+        "status": "not_exported",
+        "reason": reason,
+        "candidates": candidates or [],
+        "attempts": attempts or [],
+    }
+    return payload
+
+
+def _collect_rtl_artifacts(upstream: Path, enabled: bool = True) -> Dict[str, object]:
+    if not enabled:
+        return _empty_artifacts("artifact manifest collection disabled by CLI flag.")
+    if not upstream.exists():
+        return _empty_artifacts("upstream directory does not exist.")
+
+    items: List[Dict[str, object]] = []
+    for path in upstream.rglob("*"):
+        if not path.is_file() or ".git" in path.parts:
+            continue
+        kind = _artifact_kind(upstream, path)
+        if not kind:
+            continue
+        stat = path.stat()
+        items.append(
+            {
+                "path": _relative_repo_path(path),
+                "upstream_path": path.relative_to(upstream).as_posix(),
+                "name": path.name,
+                "kind": kind,
+                "bytes": stat.st_size,
+                "modified_utc": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(timespec="seconds"),
+            }
+        )
+
+    items.sort(key=lambda item: (str(item["kind"]), str(item["upstream_path"])))
+    limit = 80
+    return {
+        "status": "collected" if items else "none_found",
+        "root": _relative_repo_path(upstream),
+        "count": len(items),
+        "items": items[:limit],
+        "truncated": len(items) > limit,
+        "note": "Manifest records paths and sizes only; large waveform binaries remain under ignored third_party.",
+    }
+
+
+def _artifact_kind(upstream: Path, path: Path) -> Optional[str]:
+    rel = path.relative_to(upstream).as_posix()
+    suffix = path.suffix.lower()
+    name = path.name.lower()
+    rel_lower = rel.lower()
+    if suffix in {".fst", ".vcd"}:
+        return "waveform"
+    if suffix in {".dat", ".info", ".gcda", ".gcno"} or "coverage" in rel_lower or "cover" in name:
+        return "coverage_candidate"
+    generated_names = {
+        "dut.py",
+        "example.py",
+        "signals.json",
+        "top.v",
+        "top.sv",
+        "filelist.f",
+        "cmakelists.txt",
+        "makefile",
+        "dut_base.cpp",
+        "dut_base.hpp",
+        "dut_type.hpp",
+    }
+    if rel.startswith("Cache/") and "build/" not in rel and name in generated_names:
+        return "generated_dut"
+    return None
+
+
+def _detect_rtl_code_coverage(upstream: Path, coverage_info: Path, enabled: bool, smoke_complete: bool) -> Dict[str, object]:
+    attempts = ["picker export -c via make gen_dut"]
+    if not enabled:
+        return _coverage_not_exported("RTL code coverage export disabled by CLI flag.", attempts=attempts)
+    if not smoke_complete:
+        return _coverage_not_exported("RTL smoke did not complete; coverage export skipped.", attempts=attempts)
+
+    candidates = _coverage_candidate_paths(upstream)
+    candidate_labels = [_relative_repo_path(path) for path in candidates]
+    if not candidates:
+        return _coverage_not_exported(
+            "Picker coverage flag was enabled, but no Verilator coverage data file was found after smoke.",
+            attempts=attempts,
+        )
+
+    tool = shutil.which("verilator_coverage")
+    if tool is None:
+        return _coverage_not_exported(
+            "Found coverage candidate files, but verilator_coverage is not available to convert them.",
+            candidates=candidate_labels,
+            attempts=attempts,
+        )
+
+    coverage_info.parent.mkdir(parents=True, exist_ok=True)
+    attempts.append("verilator_coverage -write-info")
+    result = subprocess.run(
+        [tool, "-write-info", str(coverage_info), *[str(path) for path in candidates]],
+        cwd=upstream,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0 or not coverage_info.exists():
+        payload = _coverage_not_exported(
+            "Found coverage candidate files, but verilator_coverage did not produce an LCOV summary.",
+            candidates=candidate_labels,
+            attempts=attempts,
+        )
+        payload.update(
+            {
+                "tool": "verilator_coverage",
+                "stdout": _sanitize_log(result.stdout[-1000:]),
+                "stderr": _sanitize_log(result.stderr[-1000:]),
+            }
+        )
+        return payload
+
+    _sanitize_lcov_info(coverage_info)
+    summary = _parse_lcov_info(coverage_info)
+    return {
+        "status": "exported",
+        "tool": "verilator_coverage",
+        "artifact_path": _relative_repo_path(coverage_info),
+        "source_candidates": candidate_labels,
+        "summary": summary,
+        "attempts": attempts,
+        "note": "RTL code coverage is smoke-level code coverage and is not mixed with Python harness functional coverage.",
+    }
+
+
+def _coverage_candidate_paths(upstream: Path) -> List[Path]:
+    suffixes = {".dat", ".info", ".gcda", ".gcno"}
+    candidates: List[Path] = []
+    for path in upstream.rglob("*"):
+        if not path.is_file() or ".git" in path.parts:
+            continue
+        rel_lower = path.relative_to(upstream).as_posix().lower()
+        if path.suffix.lower() in suffixes or "coverage" in rel_lower:
+            if path.name != "rtl-code-coverage.info":
+                candidates.append(path)
+    return sorted(candidates)
+
+
+def _parse_lcov_info(path: Path) -> Dict[str, object]:
+    totals = {"lines_found": 0, "lines_hit": 0, "functions_found": 0, "functions_hit": 0, "branches_found": 0, "branches_hit": 0}
+    da_found = 0
+    da_hit = 0
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith("LF:"):
+            totals["lines_found"] += int(line.split(":", 1)[1])
+        elif line.startswith("LH:"):
+            totals["lines_hit"] += int(line.split(":", 1)[1])
+        elif line.startswith("DA:"):
+            _, payload = line.split(":", 1)
+            parts = payload.split(",")
+            if len(parts) >= 2:
+                da_found += 1
+                if int(parts[1]) > 0:
+                    da_hit += 1
+        elif line.startswith("FNF:"):
+            totals["functions_found"] += int(line.split(":", 1)[1])
+        elif line.startswith("FNH:"):
+            totals["functions_hit"] += int(line.split(":", 1)[1])
+        elif line.startswith("BRF:"):
+            totals["branches_found"] += int(line.split(":", 1)[1])
+        elif line.startswith("BRH:"):
+            totals["branches_hit"] += int(line.split(":", 1)[1])
+
+    if totals["lines_found"] == 0 and da_found:
+        totals["lines_found"] = da_found
+        totals["lines_hit"] = da_hit
+
+    def percent(hit: int, found: int) -> Optional[float]:
+        return None if found == 0 else round(hit * 100.0 / found, 2)
+
+    return {
+        **totals,
+        "line_percent": percent(totals["lines_hit"], totals["lines_found"]),
+        "function_percent": percent(totals["functions_hit"], totals["functions_found"]),
+        "branch_percent": percent(totals["branches_hit"], totals["branches_found"]),
+    }
+
+
+def _sanitize_lcov_info(path: Path) -> None:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    root_variants = {
+        str(ROOT.resolve()).replace("\\", "/"),
+        str(ROOT.resolve()),
+    }
+    sanitized = text
+    for root in root_variants:
+        if root:
+            sanitized = sanitized.replace(root.rstrip("/") + "/", "")
+            sanitized = sanitized.replace(root.rstrip("\\") + "\\", "")
+    path.write_text(sanitized, encoding="utf-8")
+
+
 def _display_path(path: Path) -> str:
     try:
         return str(path.resolve().relative_to(ROOT)).replace("\\", "/")
@@ -182,6 +419,13 @@ def _sanitize_log(text: str) -> str:
         if old:
             sanitized = sanitized.replace(old, new)
     return sanitized
+
+
+def _relative_repo_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(ROOT)).replace("\\", "/")
+    except ValueError:
+        return path.name
 
 
 if __name__ == "__main__":

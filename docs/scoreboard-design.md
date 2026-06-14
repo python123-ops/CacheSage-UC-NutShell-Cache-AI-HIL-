@@ -30,7 +30,7 @@ scoreboard rehearsal: the rules are executable before the RTL adapter lands.
 | Replacement rotates under same-set pressure. | Naive random traffic may never expose replacement state bugs. | Same-set constrained stream plus eviction-address event comparison. |
 | Refill events align to the requested line. | Beat indexing bugs often show only on line offsets. | Refill event plus readback coverage. |
 | Stall windows keep metadata/data stable. | A short architectural readback can miss a handshake stability bug. | Stall-tagged transactions plus event-level scoreboard failure. |
-| Scoreboard failures are classified before asking AI to patch. | A generated "fix" can hide a scoreboard bug or stimulus bug. | AI-HIL collaboration log and fault JSON artifacts. |
+| Scoreboard failures are classified before patching. | A quick fix can hide a scoreboard bug or stimulus bug. | Review journal and fault JSON artifacts. |
 
 ## Planned Toffee Mapping
 

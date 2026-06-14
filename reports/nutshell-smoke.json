@@ -1,17 +1,185 @@
 {
-  "status": "missing_upstream",
+  "status": "missing_dependencies",
   "layout": {
-    "root": "C:\\Users\\px830\\Documents\\UC Agent\\third_party\\Example-NutShellCache",
-    "ready": false,
-    "present_paths": [],
-    "missing_paths": [
+    "root": "third_party/Example-NutShellCache",
+    "ready": true,
+    "present_paths": [
       "Makefile",
       "rtl",
       "src",
       "test"
     ],
-    "make_targets": {},
-    "hint": "Run scripts/fetch_upstream_example.py --lock upstream.lock.json --dest third_party/Example-NutShellCache before launching the Picker/Toffee smoke flow."
+    "missing_paths": [],
+    "make_targets": {
+      "gen_dut": "Generate Picker/Toffee software DUT",
+      "test": "Run the upstream Toffee test suite",
+      "clean": "Remove generated DUT and build artifacts",
+      "wave": "Upstream Makefile target"
+    },
+    "hint": ""
   },
-  "next_command": "python scripts/fetch_upstream_example.py --lock upstream.lock.json --dest third_party/Example-NutShellCache"
+  "missing_dependencies": [
+    "make",
+    "picker",
+    "toffee",
+    "toffee-test"
+  ],
+  "python_harness": {
+    "passed": true,
+    "seed": 11,
+    "transaction_count": 96,
+    "covered_points": [
+      "cp_alternating_read_write",
+      "cp_boundary_address",
+      "cp_clean_eviction",
+      "cp_dirty_eviction",
+      "cp_full_line_mask",
+      "cp_long_random",
+      "cp_mask_mix",
+      "cp_multi_set_traffic",
+      "cp_offset_word_access",
+      "cp_partial_mask_high",
+      "cp_partial_mask_low",
+      "cp_read_after_write",
+      "cp_read_hit",
+      "cp_read_miss_refill",
+      "cp_refill_after_dirty_evict",
+      "cp_refill_alignment",
+      "cp_replacement_rotation",
+      "cp_reset_recovery",
+      "cp_same_set_pressure",
+      "cp_stall_hold",
+      "cp_write_hit_mask",
+      "cp_write_miss_allocate",
+      "cp_writeback_observed"
+    ],
+    "coverage": {
+      "total": 23,
+      "covered": 23,
+      "percent": 100.0
+    },
+    "failures": [],
+    "event_counts": {
+      "miss": 55,
+      "refill": 55,
+      "write": 46,
+      "hit": 41,
+      "read": 50,
+      "masked_write": 24,
+      "eviction": 51,
+      "dirty_eviction": 33,
+      "writeback": 33,
+      "stall_hold": 2,
+      "reset_window": 1
+    }
+  },
+  "toffee_cases_preview": [
+    {
+      "channel": "cache_req",
+      "op": "write",
+      "addr": 0,
+      "data": 16909060,
+      "mask": 15,
+      "meta": {
+        "tag": "warm-line",
+        "line_base": 0,
+        "word_offset": 0,
+        "byte_offset": 0
+      }
+    },
+    {
+      "channel": "cache_req",
+      "op": "read",
+      "addr": 0,
+      "data": 0,
+      "mask": 15,
+      "meta": {
+        "tag": "read-hit-after-write",
+        "line_base": 0,
+        "word_offset": 0,
+        "byte_offset": 0
+      }
+    },
+    {
+      "channel": "cache_req",
+      "op": "write",
+      "addr": 4,
+      "data": 2864434397,
+      "mask": 3,
+      "meta": {
+        "tag": "masked-low-offset",
+        "line_base": 0,
+        "word_offset": 1,
+        "byte_offset": 4
+      }
+    },
+    {
+      "channel": "cache_req",
+      "op": "read",
+      "addr": 4,
+      "data": 0,
+      "mask": 15,
+      "meta": {
+        "tag": "masked-low-readback",
+        "line_base": 0,
+        "word_offset": 1,
+        "byte_offset": 4
+      }
+    },
+    {
+      "channel": "cache_req",
+      "op": "write",
+      "addr": 8,
+      "data": 1432778632,
+      "mask": 12,
+      "meta": {
+        "tag": "masked-high-offset",
+        "line_base": 0,
+        "word_offset": 2,
+        "byte_offset": 8
+      }
+    },
+    {
+      "channel": "cache_req",
+      "op": "read",
+      "addr": 8,
+      "data": 0,
+      "mask": 15,
+      "meta": {
+        "tag": "masked-high-readback",
+        "line_base": 0,
+        "word_offset": 2,
+        "byte_offset": 8
+      }
+    },
+    {
+      "channel": "cache_req",
+      "op": "read",
+      "addr": 16,
+      "data": 0,
+      "mask": 15,
+      "meta": {
+        "tag": "cold-read",
+        "line_base": 16,
+        "word_offset": 0,
+        "byte_offset": 0
+      }
+    },
+    {
+      "channel": "cache_req",
+      "op": "write",
+      "addr": 32,
+      "data": 1432778632,
+      "mask": 15,
+      "meta": {
+        "tag": "same-set-write",
+        "line_base": 32,
+        "word_offset": 0,
+        "byte_offset": 0
+      }
+    }
+  ],
+  "rtl_toffee_measured_coverage": null,
+  "next_command": "Install Picker, Toffee, Toffee-Test, and make; then rerun scripts/run_nutshell_smoke.py.",
+  "note": "The Python harness completed; RTL smoke is waiting on local integration dependencies."
 }

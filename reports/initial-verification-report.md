@@ -1,6 +1,6 @@
-# CacheSage-UC Verification Evidence Report
+# CacheSage-UC Verification Record
 
-This evidence package records the current CacheSage-UC state for the UCAgent NutShell Cache track. It separates planned verification intent, Python harness measurement, and the pending RTL/Toffee measurement gate.
+This record captures the current CacheSage-UC state for the UCAgent NutShell Cache track. It separates planned verification intent, Python harness measurement, and the pending RTL/Toffee measurement gate.
 
 ## Evidence Boundary
 
@@ -29,21 +29,21 @@ This evidence package records the current CacheSage-UC state for the UCAgent Nut
 | S07 | Stall and back-pressure | Verify metadata is held stable while request, refill, or response channels stall. | cp_stall_hold, cp_refill_alignment |
 | S08 | Reset recovery | Check that reset cancels transient cache activity before the next legal request. | cp_reset_recovery, cp_read_miss_refill |
 | S09 | Boundary address aliasing | Defend against line-offset and tag slicing mistakes at boundary addresses. | cp_boundary_address, cp_offset_word_access, cp_write_hit_mask |
-| S10 | Long random regression | Let coverage holes and scoreboard mismatches drive the next UCAgent prompt round. | cp_long_random, cp_dirty_eviction, cp_stall_hold, cp_multi_set_traffic |
+| S10 | Long random regression | Let coverage holes and scoreboard mismatches drive the next review round. | cp_long_random, cp_dirty_eviction, cp_stall_hold, cp_multi_set_traffic |
 | S11 | Mask and offset matrix | Expose byte-lane mistakes that full-word traffic can hide. | cp_partial_mask_low, cp_partial_mask_high, cp_full_line_mask, cp_mask_mix |
 | S12 | Event-level replacement audit | Catch replacement-state drift even when architectural read data still matches. | cp_same_set_pressure, cp_writeback_observed, cp_refill_after_dirty_evict |
 
-## AI 盲区与人工修正对比表
+## 设计复盘与修正记录
 
-| Stage | AI output | Human correction | Lesson |
+| Stage | Draft summary | Review action | Lesson |
 | --- | --- | --- | --- |
-| Test-plan drafting | The first AI plan listed read/write hits and misses but treated replacement as a single generic case. | Split replacement into clean eviction, dirty eviction, and same-set pressure scenarios. | Coverage should name the cache invariant being protected, not just the operation category. |
+| Test-plan drafting | The first scenario draft listed read/write hits and misses but treated replacement as a single generic case. | Split replacement into clean eviction, dirty eviction, and same-set pressure scenarios. | Coverage should name the cache invariant being protected, not just the operation category. |
 | Scoreboard design | The generated checker compared only final read data and ignored writeback ordering. | Added a scoreboard obligation for victim writeback before refill installation. | Cache correctness depends on event order as much as end-state memory contents. |
-| CRV constraints | The AI suggested uniform random addresses, which rarely hits replacement pressure quickly. | Biased address generation toward one set, then kept a smaller percentage of full-range traffic. | Good coverage comes from shaped randomness plus a few directed invariants. |
-| Failure triage | The draft prompt asked the agent to fix any mismatch from the waveform summary directly. | Changed the flow so the human first classifies scoreboard bug, DUT bug, or stimulus bug. | Prompt tuning is useful after the failure has a credible engineering diagnosis. |
-| Report hygiene | The AI-generated report phrased planned coverage as completed coverage. | Reworded the report to separate planned coverpoints, Python harness data, and RTL-measured results. | Competition reports should be ambitious, but the evidence must stay audit-friendly. |
+| CRV constraints | The first random-stream draft used uniform addresses, which rarely hits replacement pressure quickly. | Biased address generation toward one set, then kept a smaller percentage of full-range traffic. | Good coverage comes from shaped randomness plus a few directed invariants. |
+| Failure triage | The first triage note tried to patch any mismatch directly from the waveform summary. | Changed the flow so review first classifies scoreboard bug, DUT bug, or stimulus bug. | A patch is useful only after the failure has a credible engineering diagnosis. |
+| Report hygiene | The first report draft phrased planned coverage as completed coverage. | Reworded the report to separate planned coverpoints, Python harness data, and RTL-measured results. | Submission reports should be ambitious, but the evidence must stay audit-friendly. |
 
-## 故障注入
+## 故障注入记录
 
 | Fault mode | Result | First failure summary |
 | --- | --- | --- |

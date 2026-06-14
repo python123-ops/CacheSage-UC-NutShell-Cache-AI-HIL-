@@ -8,12 +8,12 @@ read/write random test is too weak for this track.
 
 - Picker exposes the RTL as a Python-drivable DUT.
 - Toffee organizes driver, monitor, reference model, scoreboard, and coverage.
-- UCAgent helps draft stimulus, triage coverage holes, and explain failing seeds.
+- UCAgent is used for draft stimulus, coverage-hole triage, and failing-seed explanation.
 - Human review owns cache invariants, scoreboard rules, and evidence wording.
 
 The plan avoids claiming multi-core coherence unless the target RTL and contest
 materials expose that interface clearly. Replacement, dirty eviction, byte masks,
-and stall stability are high priority because shallow AI-generated tests often
+and stall stability are high priority because shallow random tests often
 miss them.
 
 ## Scenario Matrix
@@ -40,7 +40,7 @@ miss them.
 - `ReferenceMemory`: byte-addressable model used by the scoreboard.
 - `CacheScoreboard`: checks data, event order, dirty writeback, replacement, and mask semantics.
 - `CoverageCollector`: records functional coverpoints and produces JSON evidence.
-- `PromptJournal`: stores UCAgent prompt rounds, rejected drafts, and human fixes.
+- `ReviewJournal`: stores prompt rounds, rejected drafts, and human fixes.
 
 The current repository contains both the evidence model and an executable Python
 scoreboard rehearsal. The same interface is now prepared for the actual

@@ -39,15 +39,15 @@ class Scenario:
 @dataclass(frozen=True)
 class Intervention:
     stage: str
-    ai_output: str
-    human_action: str
+    draft_summary: str
+    review_action: str
     lesson: str
 
     def to_dict(self) -> Dict[str, str]:
         return {
             "stage": self.stage,
-            "ai_output": self.ai_output,
-            "human_action": self.human_action,
+            "draft_summary": self.draft_summary,
+            "review_action": self.review_action,
             "lesson": self.lesson,
         }
 
@@ -196,7 +196,7 @@ def build_default_bundle() -> EvidenceBundle:
         Scenario(
             "S10",
             "Long random regression",
-            "Let coverage holes and scoreboard mismatches drive the next UCAgent prompt round.",
+            "Let coverage holes and scoreboard mismatches drive the next review round.",
             "Seeded CRV stream with address distribution, read/write ratio, and stall knobs.",
             ["cp_long_random", "cp_dirty_eviction", "cp_stall_hold", "cp_multi_set_traffic"],
         ),
@@ -218,7 +218,7 @@ def build_default_bundle() -> EvidenceBundle:
     interventions = [
         Intervention(
             "Test-plan drafting",
-            "The first AI plan listed read/write hits and misses but treated replacement as a single generic case.",
+            "The first scenario draft listed read/write hits and misses but treated replacement as a single generic case.",
             "Split replacement into clean eviction, dirty eviction, and same-set pressure scenarios.",
             "Coverage should name the cache invariant being protected, not just the operation category.",
         ),
@@ -230,21 +230,21 @@ def build_default_bundle() -> EvidenceBundle:
         ),
         Intervention(
             "CRV constraints",
-            "The AI suggested uniform random addresses, which rarely hits replacement pressure quickly.",
+            "The first random-stream draft used uniform addresses, which rarely hits replacement pressure quickly.",
             "Biased address generation toward one set, then kept a smaller percentage of full-range traffic.",
             "Good coverage comes from shaped randomness plus a few directed invariants.",
         ),
         Intervention(
             "Failure triage",
-            "The draft prompt asked the agent to fix any mismatch from the waveform summary directly.",
-            "Changed the flow so the human first classifies scoreboard bug, DUT bug, or stimulus bug.",
-            "Prompt tuning is useful after the failure has a credible engineering diagnosis.",
+            "The first triage note tried to patch any mismatch directly from the waveform summary.",
+            "Changed the flow so review first classifies scoreboard bug, DUT bug, or stimulus bug.",
+            "A patch is useful only after the failure has a credible engineering diagnosis.",
         ),
         Intervention(
             "Report hygiene",
-            "The AI-generated report phrased planned coverage as completed coverage.",
+            "The first report draft phrased planned coverage as completed coverage.",
             "Reworded the report to separate planned coverpoints, Python harness data, and RTL-measured results.",
-            "Competition reports should be ambitious, but the evidence must stay audit-friendly.",
+            "Submission reports should be ambitious, but the evidence must stay audit-friendly.",
         ),
     ]
     faults = [
@@ -284,9 +284,9 @@ def render_markdown_report(bundle: EvidenceBundle) -> str:
     }
 
     lines = [
-        "# CacheSage-UC Verification Evidence Report",
+        "# CacheSage-UC Verification Record",
         "",
-        "This evidence package records the current CacheSage-UC state for the UCAgent NutShell Cache track. "
+        "This record captures the current CacheSage-UC state for the UCAgent NutShell Cache track. "
         "It separates planned verification intent, Python harness measurement, and the pending RTL/Toffee measurement gate.",
         "",
         "## Evidence Boundary",
@@ -317,19 +317,19 @@ def render_markdown_report(bundle: EvidenceBundle) -> str:
     lines.extend(
         [
             "",
-            "## AI 盲区与人工修正对比表",
+            "## 设计复盘与修正记录",
             "",
-            "| Stage | AI output | Human correction | Lesson |",
+            "| Stage | Draft summary | Review action | Lesson |",
             "| --- | --- | --- | --- |",
         ]
     )
     for item in bundle.interventions:
-        lines.append(f"| {item.stage} | {item.ai_output} | {item.human_action} | {item.lesson} |")
+        lines.append(f"| {item.stage} | {item.draft_summary} | {item.review_action} | {item.lesson} |")
 
     lines.extend(
         [
             "",
-            "## 故障注入",
+            "## 故障注入记录",
             "",
             "| Fault mode | Result | First failure summary |",
             "| --- | --- | --- |",

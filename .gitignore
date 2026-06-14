@@ -160,3 +160,12 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# Project-local integration workspaces
+third_party/
+.worktrees/
+
+# Local smoke/debug artifacts
+reports/local-*.json
+reports/local-*.md
+reports/tmp-*
+

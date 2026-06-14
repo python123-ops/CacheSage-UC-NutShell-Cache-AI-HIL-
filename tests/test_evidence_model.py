@@ -52,27 +52,29 @@ class EvidenceModelTests(unittest.TestCase):
         self.assertEqual(summary.covered, 2)
         self.assertEqual(summary.percent, 66.67)
 
-    def test_ai_human_intervention_log_has_actionable_human_corrections(self):
+    def test_review_log_has_actionable_human_corrections(self):
         from cachesage_uc.evidence import build_default_bundle
 
         bundle = build_default_bundle()
 
         self.assertGreaterEqual(len(bundle.interventions), 4)
-        self.assertTrue(any("scoreboard" in item.human_action.lower() for item in bundle.interventions))
+        self.assertTrue(any("scoreboard" in item.review_action.lower() for item in bundle.interventions))
         self.assertTrue(any("coverage" in item.lesson.lower() for item in bundle.interventions))
-        self.assertTrue(all(item.ai_output and item.human_action and item.lesson for item in bundle.interventions))
+        self.assertTrue(all(item.draft_summary and item.review_action and item.lesson for item in bundle.interventions))
 
     def test_markdown_report_contains_competition_evidence_without_placeholders(self):
         from cachesage_uc.evidence import build_default_bundle, render_markdown_report
 
         report = render_markdown_report(build_default_bundle())
 
-        self.assertIn("# CacheSage-UC Verification Evidence Report", report)
-        self.assertIn("AI 盲区与人工修正对比表", report)
+        self.assertIn("# CacheSage-UC Verification Record", report)
+        self.assertIn("设计复盘与修正记录", report)
         self.assertIn("dirty eviction", report.lower())
-        self.assertIn("故障注入", report)
+        self.assertIn("故障注入记录", report)
         self.assertIn("Python harness measured coverage", report)
         self.assertIn("RTL/Toffee measured coverage", report)
+        self.assertNotIn("AI output", report)
+        self.assertNotIn("AI 盲区", report)
         self.assertNotIn("缂?", report)
         self.assertNotIn("閺?", report)
         self.assertNotIn("TODO", report)

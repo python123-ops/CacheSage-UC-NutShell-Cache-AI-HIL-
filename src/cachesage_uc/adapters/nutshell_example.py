@@ -65,7 +65,7 @@ def _discover_make_targets(makefile: Path) -> Dict[str, str]:
             if not stripped or stripped.startswith("#") or ":" not in stripped:
                 continue
             name = stripped.split(":", 1)[0]
-            if name and " " not in name and name not in targets:
+            if name and " " not in name and "=" not in name and not name.startswith(".") and name not in targets:
                 targets[name] = "Upstream Makefile target"
     except OSError:
         return targets

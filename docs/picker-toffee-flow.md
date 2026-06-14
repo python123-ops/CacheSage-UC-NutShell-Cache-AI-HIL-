@@ -55,5 +55,5 @@ CacheSage-UC keeps three buckets separate:
 | Python harness measured coverage | What `VerificationRunner` measured on the reference/candidate cache model. |
 | RTL/Toffee measured coverage | What the Picker-generated DUT run measured; this remains empty until the dependency flow is actually run. |
 
-This is intentionally conservative. The project should win points for evidence,
-not for overstating the integration state.
+This is intentionally conservative: the integration record should show measured
+results, not overstate the current state.

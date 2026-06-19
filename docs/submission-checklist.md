@@ -6,8 +6,9 @@
 | --- | --- | --- |
 | 场景覆盖 | `docs/verification-plan.md`、`reports/sample-run-seed11.json` | 12 个场景和 23 个 coverpoint 覆盖数据路径、控制路径、mask、replacement、stall、reset 和 CRV |
 | 验证核心 | `src/cachesage_uc/verification.py`、`docs/scoreboard-design.md` | reference model、event scoreboard、确定性 fault mode 和 directed replay 已实现 |
-| 集成边界 | `src/cachesage_uc/adapters/`、`scripts/run_nutshell_smoke.py` | 上游结构检查、Toffee-style request 映射和依赖状态记录已具备 |
-| 复核证据 | `review_journal.jsonl`、`docs/review-catalog.md` | 草案问题、人工复核发现、修正方式和关联证据已记录 |
+| RTL 功能覆盖 | `integration/nutshell/`、`reports/rtl-functional-coverage.json` | 421 条真实 DUT 事务，`34/36（94.44%）`，199 次 Scoreboard 比较、0 失败 |
+| RTL 代码覆盖 | `scripts/run_rtl_regression.py` | Verilator `898/1454（61.00%）`，与功能覆盖率分栏记录 |
+| 复核证据 | `review_journal.jsonl`、`docs/ucagent-collaboration.md` | 草案、人工发现、代码修正、指标变化、命令、产物和提交均已记录 |
 | 仓库卫生 | `tests/`、`pyproject.toml`、`upstream.lock.json`、Apache-2.0 license | 标准库测试、复现命令、锁定上游 commit 和无 vendored 第三方源码 |
 
 ## 集成环境记录
@@ -17,9 +18,10 @@
 | 上游源码 | 通过 `scripts/fetch_upstream_example.py` 按 `upstream.lock.json` 拉取到 `third_party/Example-NutShellCache` |
 | Picker/Toffee 依赖 | 由 `scripts/run_nutshell_smoke.py` 写入 JSON/Markdown 状态 |
 | RTL smoke artifact | 记录 waveform、generated DUT、coverage candidate manifest，不提交大型二进制 |
-| RTL code coverage | 可导出则写 LCOV 摘要；不可导出则写 `not_exported` 原因 |
-| waveform 或 transaction trace | fault artifact 先保存 JSON 摘要，RTL smoke manifest 再记录本地产物来源 |
-| 复核记录 | 新增 prompt round 时继续写入 `review_journal.jsonl` |
+| RTL 功能覆盖率 | `reports/rtl-functional-coverage.json` 保存逐覆盖点命中次数和真实事件来源 |
+| RTL 代码覆盖率 | `coverage.dat` 已解析为 `898/1454（61.00%）` |
+| waveform 或 transaction trace | 本地 FST 为 219100 bytes；仓库提交 manifest 和摘要，不提交大型二进制 |
+| 复核记录 | RV-001 至 RV-010 记录于 `review_journal.jsonl`，其中重建记录与同步记录明确区分 |
 
 ## 非声明项
 

@@ -42,6 +42,7 @@ class ReportData:
     faults: List[FaultArtifact]
     review_rows: List[dict]
     smoke: dict
+    rtl_functional: dict
     commit: str
 
 
@@ -88,8 +89,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 def load_report_data() -> ReportData:
     sample = json.loads((ROOT / "reports" / "sample-run-seed11.json").read_text(encoding="utf-8"))
     smoke = json.loads((ROOT / "reports" / "nutshell-smoke.json").read_text(encoding="utf-8"))
+    rtl_functional = json.loads((ROOT / "reports" / "rtl-functional-coverage.json").read_text(encoding="utf-8"))
     review_rows = [
-        json.loads(line)
+        normalize_review_row(json.loads(line))
         for line in (ROOT / "review_journal.jsonl").read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
@@ -118,8 +120,21 @@ def load_report_data() -> ReportData:
         faults=faults,
         review_rows=review_rows,
         smoke=smoke,
+        rtl_functional=rtl_functional,
         commit=git_stdout(["rev-parse", "--short", "HEAD"]) or "unknown",
     )
+
+
+def normalize_review_row(row: dict) -> dict:
+    if "review_finding" in row:
+        return row
+    metrics = row.get("metrics", {})
+    return {
+        **row,
+        "review_finding": row.get("human_review", {}).get("finding", ""),
+        "correction": row.get("human_intervention", {}).get("code_change", ""),
+        "coverage_delta": f"{metrics.get('before', '未记录')} -> {metrics.get('after', '未记录')}",
+    }
 
 
 def render_markdown(data: ReportData, report_date: str) -> str:
@@ -134,7 +149,9 @@ def render_markdown(data: ReportData, report_date: str) -> str:
     missing_deps = ", ".join(data.smoke.get("missing_dependencies", [])) or "无"
     smoke_complete = data.smoke.get("status") == "rtl_smoke_complete"
     rtl_artifacts_summary = summarize_rtl_artifacts(data.smoke)
-    rtl_code_coverage_summary = summarize_rtl_code_coverage(data.smoke)
+    rtl_code_coverage_summary = summarize_rtl_code_coverage(data.rtl_functional)
+    rtl_coverage = data.rtl_functional["coverage"]
+    rtl_scoreboard = data.rtl_functional["scoreboard"]
     dependency_note = data.smoke.get("dependency_note") or (
         "Linux 环境依赖齐全；上游 make gen_dut 与 make test smoke 已通过。"
         if smoke_complete
@@ -150,14 +167,17 @@ def render_markdown(data: ReportData, report_date: str) -> str:
     )
     return f"""# {REPORT_TITLE}
 
-报告日期：{report_date}  
-GitLink：{GITLINK_URL}  
-GitHub：{GITHUB_DISPLAY}  
+报告日期：{report_date}
+
+GitLink：{GITLINK_URL}
+
+GitHub：{GITHUB_DISPLAY}
+
 提交基线：仓库当前默认分支 HEAD
 
 ## 摘要
 
-CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了一套可复现的 cache 验证原型。当前证据包括 Python harness、Generator/CRV、Scoreboard、Coverage、5 类 injected fault、人工复核记录，以及 Linux 环境下的 Picker/Toffee/NutShell smoke。Python harness 在 seed 11、{data.transaction_count} 个 transaction 上达到 `{data.coverage_covered}/{data.coverage_total}`，即 `{data.coverage_percent:.2f}%` 覆盖率。报告将 Python functional coverage、RTL smoke artifact 和 RTL code coverage 状态分栏记录，不声称已发现真实 NutShell RTL bug。
+CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了 Python 验证核心和真实 RTL 回归两条可复现路径。Python harness 在 seed 11 上达到 `{data.coverage_covered}/{data.coverage_total}`；Toffee 驱动 Picker DUT 完成 421 条事务，RTL 功能覆盖率为 `{rtl_coverage['covered']}/{rtl_coverage['total']}`，独立 Scoreboard 完成 `{rtl_scoreboard['comparisons']}` 次比较且无失败；Verilator 代码覆盖率为 `898/1454（61.00%）`。报告同时保留 5 类 injected fault 和 UCAgent 人工复核记录，不把故障注入结果写成真实 NutShell RTL 缺陷。
 
 关键词：UCAgent；NutShell Cache；Scoreboard；约束随机；故障注入；覆盖率
 
@@ -169,11 +189,15 @@ CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了一套可复现的 
 | 验证报告 | `reports/initial-verification-report.md` 与本 PDF | 已整理 |
 | 约束细化 | 12 个场景、23 个 coverpoint、same-set pressure 与 mask matrix | 已实现 |
 | 架构重构 | `src/cachesage_uc/adapters/` 对齐 Picker/Toffee 风格接口 | 已建立边界 |
+| 真实 RTL 回归 | `integration/nutshell/`、`scripts/run_rtl_regression.py` | 34/36，94.44% |
+| 人工复核 | `review_journal.jsonl`、`docs/ucagent-collaboration.md` | 10 条可追溯记录 |
 | 故障注入 | 5 类 injected fault artifact | 已检出 |
 
 ## 覆盖率与事件摘要
 
 - Python harness 覆盖率：`{data.coverage_covered}/{data.coverage_total}`，`{data.coverage_percent:.2f}%`。
+- RTL 功能覆盖率：`{rtl_coverage['covered']}/{rtl_coverage['total']}`，`{rtl_coverage['percent']:.2f}%`；421 条真实 DUT 事务。
+- RTL Scoreboard：`{rtl_scoreboard['comparisons']}` 次比较，`{len(rtl_scoreboard['failures'])}` 个失败。
 - 执行规模：seed 11，{data.transaction_count} 个 transaction。
 - 事件计数：{event_summary}。
 - Picker/Toffee/NutShell smoke：{smoke_summary}
@@ -196,7 +220,7 @@ CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了一套可复现的 
 
 {dependency_note}
 
-RTL artifact manifest 与 RTL code coverage 只作为 smoke-level RTL 侧证据；Python harness 的 `23/23` 是功能覆盖率，不与 RTL code coverage 混写。
+Python harness `23/23`、RTL 功能覆盖 `34/36` 和 RTL 代码覆盖 `898/1454` 分别记录，不互相替代。
 
 本报告将 Python harness 结果与 RTL/Toffee 结果分开记录。上述 fault artifact 仅说明 injected fault 能被 harness 和 scoreboard 检出，不代表真实 NutShell RTL 存在对应缺陷。
 """
@@ -214,7 +238,9 @@ def render_tex(data: ReportData, report_date: str) -> str:
     missing_deps = ", ".join(data.smoke.get("missing_dependencies", [])) or "无"
     smoke_complete = data.smoke.get("status") == "rtl_smoke_complete"
     rtl_artifacts_summary = summarize_rtl_artifacts(data.smoke)
-    rtl_code_coverage_summary = summarize_rtl_code_coverage(data.smoke)
+    rtl_code_coverage_summary = summarize_rtl_code_coverage(data.rtl_functional)
+    rtl_coverage = data.rtl_functional["coverage"]
+    rtl_scoreboard = data.rtl_functional["scoreboard"]
     dependency_note = data.smoke.get("dependency_note") or (
         "Linux 环境依赖齐全；上游 make gen_dut 与 make test smoke 已通过。"
         if smoke_complete
@@ -226,7 +252,7 @@ def render_tex(data: ReportData, report_date: str) -> str:
         else "当前只记录上游 layout inspection、Toffee-style request preview 与 Python harness 结果。"
     )
     smoke_limit = (
-        "本报告的主要限制不再是基础环境缺失；当前 Linux smoke 已经证明 Picker 生成 DUT、Toffee 测试入口和上游 pytest smoke 能够跑通，并保存了 RTL smoke artifact manifest。RTL code coverage 若无法由工具稳定导出，报告会保留 not\\_exported 状态和原因；后续仍需补充更长随机回归与真实 RTL functional coverage。"
+        "当前 Linux 环境已完成真实 DUT 三 seed 回归。剩余未覆盖项为输入与响应 backpressure；报告保留这两个缺口，不通过人工标记补齐。大型 FST 与 coverage.dat 留在本地忽略目录，仓库保存可复核摘要。"
         if smoke_complete
         else "本报告的主要限制是 RTL/Toffee 覆盖率未实测。该限制来自本机缺失 Picker、Toffee、Toffee-Test 或 make，不来自 Python harness 自身无法运行。为保持证据可信度，报告将这部分写成集成环境记录，并保留 \\code{rtl_toffee_measured_coverage: null} 的机器可读字段。"
     )
@@ -236,7 +262,7 @@ def render_tex(data: ReportData, report_date: str) -> str:
         else "smoke 记录：\\code{reports/nutshell-smoke.json} 记录上游目录已就绪，同时明确本机缺失 make、picker、toffee 与 toffee-test。"
     )
     smoke_conclusion = (
-        "当前 Linux smoke 已进一步证明基础 Picker/Toffee/NutShell 环境链路可运行：上游 \\code{make gen\\_dut} 与 \\code{make test} 均返回成功，pytest smoke 为 1 passed，并已保存 RTL artifact manifest。后续工作应集中在扩大 RTL functional coverage、保存关键 waveform 片段，并把更长随机回归接入同一证据链。"
+        f"当前 Linux 回归已驱动真实 Picker DUT 完成 421 条事务，RTL 功能覆盖率为 {rtl_coverage['covered']}/{rtl_coverage['total']}（{rtl_coverage['percent']:.2f}\\%），Scoreboard {rtl_scoreboard['comparisons']} 次比较且无失败；Verilator 代码覆盖率为 898/1454（61.00\\%）。"
         if smoke_complete
         else "后续若在 Linux 或完整 EDA 环境中安装 Picker、Toffee、Toffee-Test 与 make，可将同一场景矩阵接入 Picker-generated DUT，并把 RTL/Toffee measured coverage、waveform 片段和真实 RTL smoke 结果追加到报告中。当前版本坚持证据边界，不把尚未实测的 RTL 结果写成已完成结论。"
     )
@@ -291,7 +317,7 @@ GitHub 仓库： & github.com/python123-ops/CacheSage-UC \\
 \end{{tabular}}
 \vfill
 \colorbox{{CacheGray}}{{\parbox{{0.86\linewidth}}{{\centering
-本报告严格基于仓库中可复现的验证证据编写：Python harness、功能覆盖、故障注入、复核记录与 Picker/Toffee 集成边界。报告不声称已经完成真实 RTL/Toffee 覆盖率，也不声称发现真实 NutShell RTL bug。
+本报告严格基于仓库中可复现的验证证据编写：Python harness、真实 DUT 功能覆盖、Verilator 代码覆盖、故障注入与复核记录。报告不把故障注入结果写成真实 NutShell RTL 缺陷。
 }}}}
 \vspace*{{1.0cm}}
 \end{{titlepage}}
@@ -302,7 +328,7 @@ GitHub 仓库： & github.com/python123-ops/CacheSage-UC \\
 \tightsection{{摘要}}
 CacheSage-UC 面向 UCAgent NutShell Cache 赛题，围绕 cache 验证中的数据一致性、事件顺序、replacement、byte mask、stall 与 reset 等高风险路径，构建了一套可复现的验证原型。仓库包含 Generator/CRV、Reference Model、Scoreboard、Coverage Collector、Fault Injection、Review Journal 与 Linux smoke 证据。当前 Python harness 在 seed 11、{data.transaction_count} 个 transaction 上达到 \textbf{{{data.coverage_covered}/{data.coverage_total}}}，即 \textbf{{{data.coverage_percent:.2f}\%}} 功能覆盖率，并对 5 类 injected fault 给出确定性检出证据。
 
-本报告的核心目标是给评审提供可审计材料：哪些能力已经由脚本和测试证明，哪些数据仍需要更完整的 RTL coverage flow 导出。当前 Linux smoke 已跑通 Picker/Toffee/NutShell 的基础链路，并记录 RTL artifact manifest 与 RTL code coverage 状态；所有 fault artifact 均为 injected fault 检出证据，不代表真实 NutShell RTL 已被确认存在缺陷。
+真实 RTL 回归采用定向场景和 seed 11、29、73，共执行 421 条 DUT 事务；36 个功能覆盖点命中 34 个，Scoreboard 完成 199 次读数据比较且无失败。Verilator coverage.dat 经工具解析为 898/1454（61.00\%）。所有 fault artifact 均为 injected fault 检出证据，不代表真实 NutShell RTL 已被确认存在缺陷。
 
 \noindent\textbf{{关键词：}}UCAgent；NutShell Cache；Scoreboard；约束随机；故障注入；覆盖率
 
@@ -382,7 +408,9 @@ S12 & 事件级 replacement 审计，检查数据匹配时的 policy drift。 & 
 transaction 数 & {data.transaction_count} \\
 Python harness 覆盖率 & \textbf{{{data.coverage_covered}/{data.coverage_total}}}，\textbf{{{data.coverage_percent:.2f}\%}} \\
 覆盖点范围 & read/write hit、miss/refill、dirty/clean eviction、replacement、mask、stall、reset、boundary address、multi-set traffic \\
-证据边界 & RTL/Toffee 覆盖率未实测；不与 Python harness 数据混写 \\
+RTL 功能覆盖率 & \textbf{{{rtl_coverage['covered']}/{rtl_coverage['total']}}}，\textbf{{{rtl_coverage['percent']:.2f}\%}}；421 条真实 DUT 事务 \\
+RTL Scoreboard & {rtl_scoreboard['comparisons']} 次比较，{len(rtl_scoreboard['failures'])} 个失败 \\
+RTL 代码覆盖率 & 898/1454，61.00\%；与功能覆盖率分栏记录 \\
 \bottomrule
 \end{{tabularx}}
 
@@ -462,7 +490,7 @@ RTL code coverage & {latex_escape(rtl_code_coverage_summary)} \\
 \bottomrule
 \end{{tabularx}}
 
-该边界是有意保守的：{smoke_summary} 报告把环境 smoke 通过、Python harness 覆盖率和 RTL measured coverage 分栏记录，避免把尚未导出的覆盖率写成实测结论。
+报告把 Python harness、真实 DUT 功能覆盖率和 Verilator 代码覆盖率分栏记录。未命中的 input/response backpressure 明确保留为覆盖缺口。
 
 \tightsection{{Linux Smoke 实证记录}}
 本次 Linux smoke 运行在 Ubuntu 24.04 WSL2 环境中，系统依赖包含 make、CMake、GCC/G++、Verilator、SWIG 与 Python venv。Picker 安装后 \code{{picker --check}} 显示 C++ 与 Python 支持可用；Python venv 中固定 \code{{pytoffee==0.3.0}} 与 \code{{toffee-test==0.3.0}}，避免 PyPI 最新包之间的接口漂移。
@@ -472,7 +500,7 @@ RTL code coverage & {latex_escape(rtl_code_coverage_summary)} \\
 \tightsection{{限制与补充条件}}
 {smoke_limit}
 
-补充真实 RTL 功能覆盖证据时，应沿用当前场景矩阵和 seed 策略：先运行上游 \code{{make gen_dut}} 与 \code{{make test}}，再把 Picker-generated DUT 接入同一 driver/monitor/scoreboard 路径。新增数据应至少包括 RTL functional coverage、失败 transaction trace、关键 waveform 截图或路径，以及人工复核结论。
+回归入口为 \code{{python scripts/run\_rtl\_regression.py}}。脚本驱动 Picker-generated DUT，保存逐覆盖点事件来源、Scoreboard 失败明细、FST 路径和 Verilator coverage 摘要。
 
 \tightsection{{工程复现性}}
 \begin{{tabularx}}{{\linewidth}}{{P{{0.22\linewidth}}Y}}
@@ -484,6 +512,7 @@ RTL code coverage & {latex_escape(rtl_code_coverage_summary)} \\
 编译检查 & \code{{python -m compileall -q src tests scripts}} \\
 计划导出 & \code{{python -m cachesage_uc.cli plan}} \\
 覆盖率样例 & \code{{python -m cachesage_uc.cli run --seed 11 --count 96 --output reports/sample-run-seed11.json}} \\
+真实 RTL 回归 & \code{{python scripts/run\_rtl\_regression.py}} \\
 报告构建 & \code{{python scripts/build_verification_pdf.py}} \\
 许可证 & Apache License 2.0 \\
 \bottomrule
@@ -498,7 +527,7 @@ RTL code coverage & {latex_escape(rtl_code_coverage_summary)} \\
 \item 报告构建：\code{{scripts/build_verification_pdf.py}} 从 JSON/JSONL 证据生成 Markdown、LaTeX 与 PDF，减少手工维护偏差。
 \end{{enumerate}}
 
-这些证据共同构成提交包的可复核路径：评审可以先阅读 PDF，再沿着报告中的文件路径和命令回到仓库复现核心数据。若后续加入真实 RTL/Toffee 运行结果，仍应沿用同样的证据链格式。
+这些证据共同构成提交包的可复核路径：评审可以先阅读 PDF，再沿着报告中的文件路径和命令回到仓库复现 Python 与真实 RTL 数据。
 
 \newpage
 \tightsection{{结论}}
@@ -513,6 +542,8 @@ CacheSage-UC 当前已经形成面向 NutShell Cache 的可复现验证仓库和
 \item \texttt{{docs/scoreboard-design.md}}：Scoreboard invariant 与 Toffee 映射。
 \item \texttt{{docs/fault-injection.md}}：5 类 injected fault 的检测目标。
 \item \texttt{{reports/sample-run-seed11.json}}：23/23 覆盖率样例。
+\item \texttt{{reports/rtl-functional-coverage.json}}：真实 DUT 34/36 功能覆盖率、逐点来源和 Scoreboard 明细。
+\item \texttt{{docs/ucagent-collaboration.md}}：UCAgent 草案、人工复核、代码修正和指标变化。
 \item \texttt{{reports/fault-*.json}}：故障注入 artifact。
 \item \texttt{{review\_journal.jsonl}}：prompt、草案、复核发现、修正与证据链接。
 \item \texttt{{upstream.lock.json}}：Example-NutShellCache 固定来源信息。
@@ -592,11 +623,16 @@ def summarize_rtl_artifacts(smoke: dict) -> str:
     return f"未收集 RTL artifact：{artifacts.get('reason', status)}"
 
 
-def summarize_rtl_code_coverage(smoke: dict) -> str:
-    coverage = smoke.get("rtl_code_coverage") or {}
+def summarize_rtl_code_coverage(payload: dict) -> str:
+    coverage = payload.get("rtl_code_coverage") or payload.get("artifacts", {}).get("rtl_code_coverage") or {}
     status = coverage.get("status", "not_recorded")
     if status == "exported":
         summary = coverage.get("summary") or {}
+        if "covered_points" in summary:
+            return (
+                f"Verilator RTL code coverage {summary['covered_points']}/{summary['total_points']} "
+                f"({summary['percent']:.2f}%)"
+            )
         line_percent = summary.get("line_percent")
         lines_hit = summary.get("lines_hit", 0)
         lines_found = summary.get("lines_found", 0)

@@ -7,7 +7,7 @@
 - 草案可以提出计划、框架、prompt 和 first-pass code。
 - cache invariant、scoreboard 行为和覆盖率口径必须经过人工复核。
 - 任何涉及 scoreboard 的代码都要回到具体 transaction trace 上检查。
-- 报告把计划覆盖点、Python harness 实测覆盖率和 RTL/Toffee 环境记录分开写。
+- 报告把 Python harness 功能覆盖率、RTL 功能覆盖率和 Verilator 代码覆盖率分开写。
 - 机器可读记录放在 `review_journal.jsonl`，面向阅读的摘要放在 `docs/review-catalog.md`。
 
 ## 复核表
@@ -20,6 +20,8 @@
 | 失败分诊 | prompt 直接要求修补 mismatch | 先人工区分 scoreboard bug、DUT bug 或 stimulus bug | 盲目修补会隐藏根因 |
 | 报告口径 | 草案把 RTL 覆盖率写得像已实测 | 改为按 planned、Python harness、RTL/Toffee 三类记录 | 公开材料要能被复核 |
 | 上游适配 | wrapper 先假设 RTL 形状 | 锁定 Example-NutShellCache，并在 smoke 前检查 layout | 接入要从上游真实流程出发 |
+| 写请求驱动 | 直接复用上游 convenience driver | 显式传递 SimpleBus 的 size、mask 和 data | 防止 DUT 与同源参考模型同时接受错误参数 |
+| DCache 约束 | 把通用 flush 当作合法场景 | 读取 RTL 断言后改为观察 `io_empty` | 非法激励不能算作验证覆盖 |
 
 ## Prompt 模板
 

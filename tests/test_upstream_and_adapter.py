@@ -180,16 +180,37 @@ class ReviewEvidenceTests(unittest.TestCase):
             if line.strip()
         ]
 
-        self.assertGreaterEqual(len(rows), 5)
+        self.assertGreaterEqual(len(rows), 10)
         for row in rows:
-            self.assertTrue(row["prompt"])
-            self.assertTrue(row["draft_summary"])
-            self.assertTrue(row["review_finding"])
-            self.assertTrue(row["correction"])
-            self.assertTrue(row["linked_evidence"])
-            self.assertIn("coverage_delta", row)
-            self.assertNotIn("ai_output_summary", row)
-            self.assertNotIn("human_finding", row)
+            self.assertEqual(row["schema_version"], 2)
+            self.assertTrue(row["stage"])
+            self.assertTrue(row["prompt_excerpt"])
+            self.assertTrue(row["ucagent_draft_summary"])
+            self.assertTrue(row["affected_modules"])
+            self.assertTrue(row["human_review"]["finding"])
+            self.assertTrue(row["human_review"]["risk"])
+            self.assertIn(
+                row["human_intervention"]["type"],
+                {
+                    "prompt_tuning",
+                    "direct_rewrite",
+                    "architecture_rework",
+                    "evidence_correction",
+                    "driver_rewrite",
+                    "constraint_correction",
+                },
+            )
+            self.assertTrue(row["human_intervention"]["code_change"])
+            self.assertIn("before", row["metrics"])
+            self.assertIn("after", row["metrics"])
+            self.assertTrue(row["verification"]["commands"])
+            self.assertTrue(row["verification"]["artifacts"])
+            self.assertIn(
+                row["record_basis"],
+                {"contemporaneous", "reconstructed_from_git_and_review_notes"},
+            )
+        self.assertTrue(all(row["record_basis"] == "contemporaneous" for row in rows[-5:]))
+        self.assertTrue(all(row["commit"] == "1483be6" for row in rows[-5:]))
 
 
 if __name__ == "__main__":

@@ -166,6 +166,7 @@ third_party/
 local-backups/
 
 # Local smoke/debug artifacts
+artifacts/
 reports/local-*.json
 reports/local-*.md
 reports/tmp-*

@@ -16,6 +16,7 @@ CacheSage-UC 面向 UCAgent NutShell Cache 验证任务，目标是把 cache 验
 | RTL 功能覆盖率 | `34/36（94.44%）` | `reports/rtl-functional-coverage.json`，199 次 Scoreboard 比较、0 失败 |
 | RTL 代码覆盖率 | `898/1454（61.00%）` | Verilator `coverage.dat` 经 `verilator_coverage --annotate` 解析 |
 | RTL 运行产物 | 本地保留 | FST 波形 219100 bytes，coverage.dat 3621619 bytes；仓库提交摘要，不提交大型二进制 |
+| 答辩材料 | 12 页学术答辩稿 | `reports/CacheSage-UC-defense-demo-NSFC.pptx`，由仓库证据动态生成 |
 
 ## 验证能力
 
@@ -36,6 +37,7 @@ python -m compileall -q src tests scripts
 python -m cachesage_uc.cli plan
 python -m cachesage_uc.cli run --seed 11 --count 96 --output reports/sample-run-seed11.json
 python scripts/generate_report.py --output reports/initial-verification-report.md
+python scripts/build_defense_ppt.py
 ```
 
 基础验证层只使用 Python 标准库。真实 RTL 回归在 WSL Ubuntu 24.04 中使用 Picker、Toffee、Toffee-Test、Verilator 和 make。

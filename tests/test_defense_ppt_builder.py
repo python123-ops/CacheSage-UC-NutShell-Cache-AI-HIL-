@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PPTX = ROOT / "reports" / "CacheSage-UC-defense-demo-NSFC.pptx"
+PPTX = ROOT / "reports" / "CacheSage-UC-defense-demo.pptx"
 
 
 class DefensePptBuilderTests(unittest.TestCase):
@@ -34,9 +34,11 @@ class DefensePptBuilderTests(unittest.TestCase):
 
     def test_visible_metrics_match_evidence(self) -> None:
         evidence = json.loads((ROOT / "reports" / "rtl-functional-coverage.json").read_text(encoding="utf-8"))
-        self.assertEqual(evidence["coverage"]["covered"], 34)
+        self.assertEqual(evidence["coverage"]["covered"], 36)
         self.assertEqual(evidence["coverage"]["total"], 36)
         self.assertEqual(evidence["scoreboard"]["failures"], [])
+        self.assertGreater(evidence["backpressure"]["input_wait_cycles"], 0)
+        self.assertGreater(evidence["backpressure"]["response_wait_cycles"], 0)
 
 
 if __name__ == "__main__":

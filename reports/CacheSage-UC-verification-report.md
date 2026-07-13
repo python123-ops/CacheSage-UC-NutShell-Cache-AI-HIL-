@@ -1,16 +1,16 @@
 # CacheSage-UC：面向 NutShell Cache 的 UCAgent 辅助自动化验证报告
 
-报告日期：2026-06-19
+报告日期：2026-07-13
 
 GitLink：https://gitlink.org.cn/python123/cachesage-uc
 
-GitHub：github.com/python123-ops/CacheSage-UC
+GitHub：https://github.com/python123-ops/CacheSage-UC-NutShell-Cache-AI-HIL-
 
 提交基线：仓库当前默认分支 HEAD
 
 ## 摘要
 
-CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了 Python 验证核心和真实 RTL 回归两条可复现路径。Python harness 在 seed 11 上达到 `23/23`；Toffee 驱动 Picker DUT 完成 421 条事务，RTL 功能覆盖率为 `34/36`，独立 Scoreboard 完成 `199` 次比较且无失败；Verilator 代码覆盖率为 `898/1454（61.00%）`。报告同时保留 5 类 injected fault 和 UCAgent 人工复核记录，不把故障注入结果写成真实 NutShell RTL 缺陷。
+CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了 Python 验证核心和真实 RTL 回归两条可复现路径。Python harness 在 seed 11 上达到 `23/23`；Toffee 驱动 Picker DUT 完成 437 条事务，RTL 功能覆盖率为 `36/36`，独立 Scoreboard 完成 `207` 次比较且无失败；Verilator 代码覆盖率为 `Verilator RTL code coverage 898/1454 (61.00%)`。报告同时保留 5 类 injected fault 和 UCAgent 人工复核记录，不把故障注入结果写成真实 NutShell RTL 缺陷。
 
 关键词：UCAgent；NutShell Cache；Scoreboard；约束随机；故障注入；覆盖率
 
@@ -22,15 +22,27 @@ CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了 Python 验证核�
 | 验证报告 | `reports/initial-verification-report.md` 与本 PDF | 已整理 |
 | 约束细化 | 12 个场景、23 个 coverpoint、same-set pressure 与 mask matrix | 已实现 |
 | 架构重构 | `src/cachesage_uc/adapters/` 对齐 Picker/Toffee 风格接口 | 已建立边界 |
-| 真实 RTL 回归 | `integration/nutshell/`、`scripts/run_rtl_regression.py` | 34/36，94.44% |
+| 真实 RTL 回归 | `integration/nutshell/`、`scripts/run_rtl_regression.py` | 36/36，100.00% |
 | 人工复核 | `review_journal.jsonl`、`docs/ucagent-collaboration.md` | 10 条可追溯记录 |
 | 故障注入 | 5 类 injected fault artifact | 已检出 |
+
+## 官方评分证据矩阵
+
+| 官方总维度 | 权重 | 主要证据 |
+| --- | ---: | --- |
+| 项目完整度 | 40% | `src/`、`integration/`、`tests/`、`reports/`、Apache-2.0 `LICENSE` |
+| 技术深度 | 30% | 独立 Scoreboard、36 点真实 DUT 覆盖、背压握手和故障注入 |
+| AI 使用效率 | 20% | `review_journal.jsonl` 与人工修正对比，重建/同期记录分开 |
+| 工程质量 | 10% | 上游锁定、portable/full 验收、Python 3.8/当前版本 CI |
+
+详细 100 分细项按 `20（基础环境）+25（人工介入）+15（功能覆盖）+20（协作过程）+20（工程复现）` 对应到 `docs/scoring-evidence.md`。该矩阵只帮助定位证据，不自行承诺评委给出 100 分。
 
 ## 覆盖率与事件摘要
 
 - Python harness 覆盖率：`23/23`，`100.00%`。
-- RTL 功能覆盖率：`34/36`，`94.44%`；421 条真实 DUT 事务。
-- RTL Scoreboard：`199` 次比较，`0` 个失败。
+- RTL 功能覆盖率：`36/36`，`100.00%`；437 条真实 DUT 事务。
+- RTL Scoreboard：`207` 次比较，`0` 个失败。
+- 背压握手：输入等待 `2` 周期，响应等待 `3` 周期；请求/响应 payload 稳定，8 条响应按序进入 Scoreboard。
 - 执行规模：seed 11，96 个 transaction。
 - 事件计数：dirty_eviction=33, eviction=51, hit=41, masked_write=24, miss=55, read=50, refill=55, reset_window=1, stall_hold=2, write=46, writeback=33。
 - Picker/Toffee/NutShell smoke：Linux 环境已完成上游 `make gen_dut` 与 `make test` smoke；已收集 7 个 RTL artifact manifest，包含 waveform 1 个、coverage candidate 2 个、generated DUT 4 个；Verilator RTL code coverage 898/1454 (61.00%)。
@@ -66,6 +78,6 @@ CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了 Python 验证核�
 
 Linux 环境依赖齐全；上游 make gen_dut 与 make test smoke 已通过。
 
-Python harness `23/23`、RTL 功能覆盖 `34/36` 和 RTL 代码覆盖 `898/1454` 分别记录，不互相替代。
+Python harness `23/23`、RTL 功能覆盖 `36/36` 和 Verilator RTL code coverage 898/1454 (61.00%) 分别记录，不互相替代。
 
 本报告将 Python harness 结果与 RTL/Toffee 结果分开记录。上述 fault artifact 仅说明 injected fault 能被 harness 和 scoreboard 检出，不代表真实 NutShell RTL 存在对应缺陷。

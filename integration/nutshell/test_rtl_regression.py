@@ -205,6 +205,51 @@ async def test_rtl_functional_coverage(rtl_cache):
             if (index + 1) % 32 == 0:
                 print(f"seed-{seed} progress={index + 1}/128", flush=True)
 
+    backpressure_base = 0x001A0000
+    backpressure_transactions = []
+    for word in range(8):
+        address = backpressure_base + word * 8
+        data = 0xCACE000000000000 | word
+        await access(
+            RtlTransaction.write(address, data, tag=f"backpressure-warm-{word}"),
+            seed=0,
+            index=200 + word,
+        )
+        backpressure_transactions.append(
+            RtlTransaction.read(address, tag=f"backpressure-read-{word}")
+        )
+
+    backpressure_trace = await driver.execute_backpressure_burst(
+        backpressure_transactions,
+        minimum_response_wait_cycles=3,
+        timeout_cycles=2048,
+    )
+    for index, (transaction, response) in enumerate(
+        zip(backpressure_transactions, backpressure_trace.responses)
+    ):
+        scoreboard.observe(transaction, response.get("rdata"), seed=0, index=300 + index)
+        coverage.observe(
+            RtlObservation(
+                op="read",
+                address=transaction.address,
+                hit=True,
+                read_after_write=True,
+                input_wait_cycles=backpressure_trace.input_wait_cycles if index == 0 else 0,
+                response_wait_cycles=backpressure_trace.response_wait_cycles if index == 0 else 0,
+                source=f"backpressure-burst:tx-{index}:io-in-handshake",
+            )
+        )
+        transaction_count += 1
+    assert backpressure_trace.request_payload_stable
+    assert backpressure_trace.response_payload_stable
+    assert backpressure_trace.ordered_responses
+    print(
+        "backpressure-complete "
+        f"input-wait={backpressure_trace.input_wait_cycles} "
+        f"response-wait={backpressure_trace.response_wait_cycles}",
+        flush=True,
+    )
+
     idle_empty = False
     for _ in range(1024):
         await ClockCycles(env.dut, 1)
@@ -236,7 +281,8 @@ async def test_rtl_functional_coverage(rtl_cache):
             "status": "collection_requested",
             "artifact": str(artifact_dir / "coverage.dat"),
         },
+        backpressure=backpressure_trace.to_dict(),
     )
     write_rtl_evidence(evidence, output_json, output_markdown)
     assert not scoreboard.failures
-    assert report.covered >= 33, f"RTL functional coverage is {report.covered}/{report.total}"
+    assert report.covered == report.total, f"RTL functional coverage is {report.covered}/{report.total}"

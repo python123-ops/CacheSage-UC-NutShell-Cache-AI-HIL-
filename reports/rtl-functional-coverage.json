@@ -1,6 +1,6 @@
 {
-  "schema_version": 1,
-  "generated_at": "2026-06-19T04:55:44.228290+00:00",
+  "schema_version": 2,
+  "generated_at": "2026-07-13T07:50:20.660405+00:00",
   "status": "rtl_functional_coverage_complete",
   "subject": {
     "name": "XS-MLVP/Example-NutShellCache",
@@ -18,12 +18,12 @@
       29,
       73
     ],
-    "transactions": 421
+    "transactions": 437
   },
   "coverage": {
     "total": 36,
-    "covered": 34,
-    "percent": 94.44
+    "covered": 36,
+    "percent": 100.0
   },
   "coverpoints": [
     {
@@ -45,7 +45,7 @@
     {
       "id": "rtl_read_hit",
       "description": "read hit returns without a memory refill",
-      "hit_count": 90,
+      "hit_count": 98,
       "covered": true,
       "sources": [
         "seed-0:tx-1:read-hit:victim-8",
@@ -61,7 +61,7 @@
     {
       "id": "rtl_write_miss_allocate",
       "description": "write miss allocates a line",
-      "hit_count": 129,
+      "hit_count": 130,
       "covered": true,
       "sources": [
         "seed-0:tx-11:same-set-1:mem-read+victim-4",
@@ -77,7 +77,7 @@
     {
       "id": "rtl_write_hit",
       "description": "write hit updates a resident line",
-      "hit_count": 89,
+      "hit_count": 96,
       "covered": true,
       "sources": [
         "seed-0:tx-2:write-hit-full:victim-4",
@@ -93,7 +93,7 @@
     {
       "id": "rtl_read_after_write",
       "description": "read returns data from an earlier write",
-      "hit_count": 19,
+      "hit_count": 27,
       "covered": true,
       "sources": [
         "seed-0:tx-6:read-after-write:victim-4",
@@ -109,7 +109,7 @@
     {
       "id": "rtl_full_mask_write",
       "description": "full 8-byte mask write",
-      "hit_count": 36,
+      "hit_count": 44,
       "covered": true,
       "sources": [
         "seed-0:tx-2:write-hit-full:victim-4",
@@ -173,7 +173,7 @@
     {
       "id": "rtl_line_first_word",
       "description": "access first word of a cache line",
-      "hit_count": 81,
+      "hit_count": 83,
       "covered": true,
       "sources": [
         "seed-0:tx-0:read-miss-refill:mem-read+victim-2",
@@ -189,7 +189,7 @@
     {
       "id": "rtl_line_last_word",
       "description": "access last word of a cache line",
-      "hit_count": 45,
+      "hit_count": 47,
       "covered": true,
       "sources": [
         "seed-0:tx-7:line-last-word:victim-2",
@@ -214,7 +214,7 @@
     {
       "id": "rtl_four_way_fill",
       "description": "fill all four ways in one set",
-      "hit_count": 348,
+      "hit_count": 356,
       "covered": true,
       "sources": [
         "seed-0:tx-13:same-set-3:mem-read+victim-4",
@@ -230,7 +230,7 @@
     {
       "id": "rtl_same_set_replacement",
       "description": "fifth line in one set triggers replacement",
-      "hit_count": 311,
+      "hit_count": 319,
       "covered": true,
       "sources": [
         "seed-0:tx-14:same-set-4:mem-read+mem-write+victim-4",
@@ -246,7 +246,7 @@
     {
       "id": "rtl_victim_onehot",
       "description": "victim way mask is one-hot",
-      "hit_count": 417,
+      "hit_count": 425,
       "covered": true,
       "sources": [
         "seed-0:tx-0:read-miss-refill:mem-read+victim-2",
@@ -262,7 +262,7 @@
     {
       "id": "rtl_victim_way_0",
       "description": "replacement selects way 0",
-      "hit_count": 125,
+      "hit_count": 126,
       "covered": true,
       "sources": [
         "seed-0:tx-3:mask-low:victim-1",
@@ -278,7 +278,7 @@
     {
       "id": "rtl_victim_way_1",
       "description": "replacement selects way 1",
-      "hit_count": 101,
+      "hit_count": 103,
       "covered": true,
       "sources": [
         "seed-0:tx-0:read-miss-refill:mem-read+victim-2",
@@ -294,7 +294,7 @@
     {
       "id": "rtl_victim_way_2",
       "description": "replacement selects way 2",
-      "hit_count": 98,
+      "hit_count": 100,
       "covered": true,
       "sources": [
         "seed-0:tx-2:write-hit-full:victim-4",
@@ -310,7 +310,7 @@
     {
       "id": "rtl_victim_way_3",
       "description": "replacement selects way 3",
-      "hit_count": 93,
+      "hit_count": 96,
       "covered": true,
       "sources": [
         "seed-0:tx-1:read-hit:victim-8",
@@ -342,7 +342,7 @@
     {
       "id": "rtl_dirty_eviction_writeback",
       "description": "dirty victim produces writeback",
-      "hit_count": 114,
+      "hit_count": 115,
       "covered": true,
       "sources": [
         "seed-0:tx-14:same-set-4:mem-read+mem-write+victim-4",
@@ -358,7 +358,7 @@
     {
       "id": "rtl_refill_after_writeback",
       "description": "refill follows dirty writeback",
-      "hit_count": 114,
+      "hit_count": 115,
       "covered": true,
       "sources": [
         "seed-0:tx-14:same-set-4:mem-read+mem-write+victim-4",
@@ -374,7 +374,7 @@
     {
       "id": "rtl_multi_set",
       "description": "traffic reaches multiple set indices",
-      "hit_count": 409,
+      "hit_count": 417,
       "covered": true,
       "sources": [
         "seed-0:tx-8:adjacent-line:mem-read+victim-2",
@@ -390,14 +390,16 @@
     {
       "id": "rtl_input_backpressure",
       "description": "request waits for input ready",
-      "hit_count": 0,
-      "covered": false,
-      "sources": []
+      "hit_count": 1,
+      "covered": true,
+      "sources": [
+        "backpressure-burst:tx-0:io-in-handshake"
+      ]
     },
     {
       "id": "rtl_memory_read_latency",
       "description": "memory read response is delayed",
-      "hit_count": 238,
+      "hit_count": 239,
       "covered": true,
       "sources": [
         "seed-0:tx-0:read-miss-refill:mem-read+victim-2",
@@ -413,7 +415,7 @@
     {
       "id": "rtl_memory_write_latency",
       "description": "memory write response is delayed",
-      "hit_count": 114,
+      "hit_count": 115,
       "covered": true,
       "sources": [
         "seed-0:tx-14:same-set-4:mem-read+mem-write+victim-4",
@@ -429,9 +431,11 @@
     {
       "id": "rtl_response_backpressure",
       "description": "response waits for consumer ready",
-      "hit_count": 0,
-      "covered": false,
-      "sources": []
+      "hit_count": 1,
+      "covered": true,
+      "sources": [
+        "backpressure-burst:tx-0:io-in-handshake"
+      ]
     },
     {
       "id": "rtl_reset_recovery",
@@ -518,13 +522,29 @@
     }
   ],
   "scoreboard": {
-    "comparisons": 199,
+    "comparisons": 207,
     "failures": []
+  },
+  "backpressure": {
+    "input_wait_cycles": 2,
+    "response_wait_cycles": 3,
+    "request_payload_stable": true,
+    "response_payload_stable": true,
+    "ordered_responses": true,
+    "response_count": 8,
+    "signals": {
+      "request_valid": "io_in_req_valid",
+      "request_ready": "io_in_req_ready",
+      "request_payload": "io_in_req_bits_*",
+      "response_valid": "io_in_resp_valid",
+      "response_ready": "io_in_resp_ready",
+      "response_payload": "io_in_resp_bits_*"
+    }
   },
   "artifacts": {
     "waveform": {
       "path": "artifacts/rtl/nutshell-cache-regression.fst",
-      "bytes": 219100,
+      "bytes": 223382,
       "committed": false
     },
     "rtl_code_coverage": {
@@ -537,7 +557,7 @@
         "total_points": 1454,
         "percent": 61.0
       },
-      "bytes": 3621619,
+      "bytes": 2887715,
       "committed": false
     }
   }

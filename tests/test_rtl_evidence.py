@@ -31,7 +31,7 @@ class RtlEvidenceTests(unittest.TestCase):
 
     def test_complete_evidence_preserves_tool_and_run_provenance(self):
         coverage = RtlCoverageCollector()
-        for identifier in list(coverage.points)[:33]:
+        for identifier in coverage.points:
             coverage.hit(identifier, "seed-11:tx-4:mem-read")
 
         evidence = build_rtl_evidence(
@@ -42,15 +42,28 @@ class RtlEvidenceTests(unittest.TestCase):
             transactions=384,
             waveform="artifacts/nutshell-cache-regression.fst",
             code_coverage={"status": "exported", "artifact": "artifacts/coverage.dat"},
+            backpressure={
+                "input_wait_cycles": 5,
+                "response_wait_cycles": 3,
+                "request_payload_stable": True,
+                "response_payload_stable": True,
+                "ordered_responses": True,
+                "response_count": 8,
+            },
         )
 
-        self.assertEqual(evidence["schema_version"], 1)
+        self.assertEqual(evidence["schema_version"], 2)
         self.assertEqual(evidence["status"], "rtl_functional_coverage_complete")
         self.assertEqual(evidence["run"]["seeds"], [11, 29, 73])
         self.assertEqual(evidence["run"]["transactions"], 384)
-        self.assertEqual(evidence["coverage"]["covered"], 33)
+        self.assertEqual(evidence["coverage"]["covered"], 36)
         self.assertEqual(evidence["scoreboard"]["failures"], [])
         self.assertIn("picker", evidence["tools"])
+        self.assertEqual(evidence["backpressure"]["input_wait_cycles"], 5)
+        self.assertEqual(
+            evidence["backpressure"]["signals"]["request_ready"],
+            "io_in_req_ready",
+        )
 
     def test_markdown_distinguishes_functional_and_code_coverage(self):
         coverage = RtlCoverageCollector()

@@ -208,8 +208,10 @@ class RtlCoverageCollector:
         percent = round(covered * 100.0 / total, 2)
         if scoreboard_failures:
             status = "rtl_functional_coverage_failed"
-        elif covered >= 33:
+        elif covered == total:
             status = "rtl_functional_coverage_complete"
+        elif percent >= 90.0:
+            status = "rtl_functional_coverage_threshold_met"
         else:
             status = "rtl_functional_coverage_below_threshold"
         return RtlCoverageReport(

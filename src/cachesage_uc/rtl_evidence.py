@@ -28,10 +28,20 @@ def build_rtl_evidence(
     transactions: int,
     waveform: Optional[str],
     code_coverage: dict,
+    backpressure: Optional[dict] = None,
 ) -> dict:
     payload = report.to_dict()
+    handshake = dict(backpressure or {})
+    handshake["signals"] = {
+        "request_valid": "io_in_req_valid",
+        "request_ready": "io_in_req_ready",
+        "request_payload": "io_in_req_bits_*",
+        "response_valid": "io_in_resp_valid",
+        "response_ready": "io_in_resp_ready",
+        "response_payload": "io_in_resp_bits_*",
+    }
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "status": payload["status"],
         "subject": {
@@ -46,6 +56,7 @@ def build_rtl_evidence(
         "coverage": payload["coverage"],
         "coverpoints": payload["coverpoints"],
         "scoreboard": payload["scoreboard"],
+        "backpressure": handshake,
         "artifacts": {
             "waveform": waveform,
             "rtl_code_coverage": dict(code_coverage),
@@ -58,6 +69,7 @@ def render_rtl_markdown(evidence: dict) -> str:
     scoreboard = evidence["scoreboard"]
     code_coverage = evidence["artifacts"]["rtl_code_coverage"]
     code_status = code_coverage.get("status", "not_exported")
+    backpressure = evidence.get("backpressure", {})
     code_detail = code_coverage.get("summary") or code_coverage.get("reason") or code_status
     if isinstance(code_detail, dict) and {"covered_points", "total_points", "percent"} <= set(code_detail):
         code_detail = (
@@ -80,6 +92,11 @@ def render_rtl_markdown(evidence: dict) -> str:
             f"- RTL 事务数：`{evidence['run']['transactions']}`",
             f"- RTL 功能覆盖率：`{coverage['covered']}/{coverage['total']}`（`{coverage['percent']:.2f}%`）",
             f"- Scoreboard：`{scoreboard['comparisons']}` 次比较，`{len(scoreboard['failures'])}` 个失败",
+            f"- 输入背压：等待 `{backpressure.get('input_wait_cycles', 0)}` 周期，"
+            f"请求 payload {'稳定' if backpressure.get('request_payload_stable') else '未证明稳定'}",
+            f"- 响应背压：等待 `{backpressure.get('response_wait_cycles', 0)}` 周期，"
+            f"响应 payload {'稳定' if backpressure.get('response_payload_stable') else '未证明稳定'}，"
+            f"{'按序排空' if backpressure.get('ordered_responses') else '顺序未证明'}",
             f"- RTL 代码覆盖率：`{code_status}`，{code_detail}",
             "",
             "## 覆盖点明细",

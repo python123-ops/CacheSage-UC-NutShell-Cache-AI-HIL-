@@ -16,8 +16,8 @@ async function loadArtifactTool() {
 const { Presentation, PresentationFile } = await loadArtifactTool();
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = path.join(ROOT, "reports", "CacheSage-UC-defense-demo-NSFC.pptx");
-const WORK = process.env.CACHESAGE_PPT_WORK || path.join(process.env.TEMP || ".", "cachesage-ppt-nsfc");
+const OUT = path.join(ROOT, "reports", "CacheSage-UC-defense-demo.pptx");
+const WORK = process.env.CACHESAGE_PPT_WORK || path.join(process.env.TEMP || ".", "cachesage-ppt");
 const PREVIEW = path.join(WORK, "preview");
 const LAYOUT = path.join(WORK, "layout");
 const BACKGROUND = path.join(ROOT, "assets", "defense-background.png");
@@ -31,6 +31,9 @@ const bgBytes = await readImageBlob(BACKGROUND);
 const codeSummary = rtl.artifacts.rtl_code_coverage.summary;
 const failures = rtl.scoreboard.failures.length;
 const uncovered = rtl.coverpoints.filter(point => !point.covered).map(point => point.id);
+const coverageBoundary = uncovered.length
+  ? `${uncovered.join("、")} 尚未命中；不得写成覆盖闭环。`
+  : `输入等待 ${rtl.backpressure.input_wait_cycles} 周期、响应等待 ${rtl.backpressure.response_wait_cycles} 周期；payload 稳定且响应按序。`;
 const FONT = "Microsoft YaHei";
 const MONO = "Cascadia Mono";
 const C = {
@@ -134,7 +137,7 @@ function cover(p) {
   ];
   values.forEach((item, i) => metric(s, 72 + i * 285, 395, 260, item[0], item[1], item[2]));
   text(s, "GitLink · python123/cachesage-uc", 74, 642, 420, 22, 14, C.muted);
-  text(s, "GitHub · python123-ops/CacheSage-UC", 500, 642, 450, 22, 14, C.muted);
+  text(s, "GitHub · python123-ops/CacheSage-UC-NutShell-Cache-AI-HIL-", 430, 642, 650, 22, 13, C.muted);
   text(s, "2026", 1138, 642, 70, 22, 14, C.pale, true, "right");
 }
 
@@ -174,7 +177,7 @@ function problem(p) {
   ];
   cols.forEach((c, i) => {
     const x = 68 + i * 430;
-    panel(s, x, 205, 360, 360, { fill: "#F8FBFF/95" });
+    panel(s, x, 205, 350, 360, { fill: "#F8FBFF/95" });
     text(s, `0${i + 1}`, x + 24, 226, 60, 42, 27, c[3], true);
     text(s, c[0], x + 24, 283, 300, 38, 25, C.ink, true);
     rule(s, x + 24, 337, 78, 3, c[3]);
@@ -204,7 +207,7 @@ function contributions(p) {
     text(s, item[2], 910, y + 30, 252, 52, 16, C.ink, true);
   });
   text(s, "完成标准", 72, 626, 100, 24, 15, C.cyan, true);
-  text(s, "RTL functional coverage ≥ 90% 且 Scoreboard failure = 0", 190, 622, 650, 30, 19, C.white, true);
+  text(s, "覆盖闭环仅在 RTL 36/36 且 Scoreboard failure = 0 时成立", 190, 622, 760, 30, 19, C.white, true);
 }
 
 function architecture(p) {
@@ -232,7 +235,7 @@ function architecture(p) {
     [C.blue, C.cyan, C.orange, C.gold, C.teal, C.green][i]));
   darkPanel(s, 850, 412, 342, 184, { fill: "#071C42/94" });
   text(s, "判定门槛", 878, 436, 250, 30, 19, C.cyan, true);
-  text(s, `覆盖点 ≥ 33 / 36\nScoreboard failure = 0\n每个命中保留 source trace`, 878, 486, 282, 92, 18, C.white, true);
+  text(s, `覆盖闭环 = 36 / 36\nScoreboard failure = 0\n每个命中保留 source trace`, 878, 486, 282, 92, 18, C.white, true);
 }
 
 function scenarios(p) {
@@ -257,10 +260,11 @@ function scenarios(p) {
   text(s, "真实 RTL 覆盖", 958, 218, 228, 28, 18, C.pale, true, "center");
   text(s, `${rtl.coverage.covered}/${rtl.coverage.total}`, 958, 270, 228, 72, 50, C.green, true, "center");
   text(s, `${rtl.coverage.percent.toFixed(2)}%`, 958, 346, 228, 42, 28, C.cyan, true, "center");
-  text(s, "门槛：33/36", 958, 406, 228, 24, 15, C.muted, false, "center");
+  text(s, "闭环：36/36", 958, 406, 228, 24, 15, C.muted, false, "center");
   panel(s, 932, 484, 280, 134, { fill: "#FFF8E8/96", line: "#F4BE4F/80" });
-  text(s, "保留真实缺口", 956, 504, 230, 26, 17, "#9A6410", true);
-  text(s, uncovered.join("\n"), 956, 542, 230, 60, 14, "#7C5A20", false, "left", MONO);
+  text(s, uncovered.length ? "保留真实缺口" : "真实握手闭环", 956, 504, 230, 26, 17, uncovered.length ? "#9A6410" : C.green, true);
+  text(s, uncovered.length ? uncovered.join("\n") : `IN  ${rtl.backpressure.input_wait_cycles} cycles\nOUT ${rtl.backpressure.response_wait_cycles} cycles`,
+    956, 542, 230, 60, 14, uncovered.length ? "#7C5A20" : "#206C57", false, "left", MONO);
 }
 
 function linuxFlow(p) {
@@ -273,7 +277,7 @@ function linuxFlow(p) {
     "$ python scripts/run_rtl_regression.py",
     "directed-complete transactions=16",
     "seed-11/29/73 progress=128/128",
-    "PASSED  RTL 34/36  Scoreboard 0",
+    `PASSED  RTL ${rtl.coverage.covered}/${rtl.coverage.total}  Scoreboard ${failures}`,
   ];
   commands.forEach((line, i) => text(s, line, 92, 262 + i * 42, 570, 28, 16,
     i === 5 ? C.green : (i === 1 ? C.gold : C.pale), i === 5, "left", MONO));
@@ -311,7 +315,7 @@ function coverage(p) {
   metric(s, 850, 318, 362, `${rtl.coverage.covered}/${rtl.coverage.total}`, "真实 RTL functional coverage", C.cyan);
   metric(s, 850, 448, 362, `${codeSummary.covered_points}/${codeSummary.total_points}`, "Verilator code coverage", C.gold);
   darkPanel(s, 68, 620, 1144, 42, { fill: "#071A3D/92" });
-  text(s, `Scoreboard：${rtl.scoreboard.comparisons} 次独立比较，${failures} 个失败；功能覆盖达成门槛并保留 ${uncovered.length} 个未命中点。`,
+  text(s, `Scoreboard：${rtl.scoreboard.comparisons} 次独立比较，${failures} 个失败；功能覆盖 ${rtl.coverage.covered}/${rtl.coverage.total}，背压证据来自 io_in_* 握手。`,
     88, 630, 1104, 24, 16, C.white, true, "center");
 }
 
@@ -373,7 +377,7 @@ function collaboration(p) {
 }
 
 function reproducibility(p) {
-  const s = p.slides.add(); addChrome(s, "04 工程基础", "代码、报告、覆盖率与复核记录可以双向反查", 11);
+  const s = p.slides.add(); addChrome(s, "04 评分与复现", "官方维度逐项链接代码、证据与复现入口", 11);
   const chain = [
     ["源代码", "src/ · integration/", C.blue], ["运行证据", "JSON · FST · coverage.dat", C.cyan],
     ["复核记录", "review_journal.jsonl", C.gold], ["正式材料", "PDF · PPTX", C.green],
@@ -391,12 +395,13 @@ function reproducibility(p) {
   text(s, "$ python scripts/run_rtl_regression.py\n$ python -m unittest discover -s tests -v\n$ python scripts/build_verification_pdf.py",
     94, 468, 486, 112, 16, C.ink, false, "left", MONO);
   panel(s, 650, 398, 562, 218, { fill: "#F7FAFE/96" });
-  label(s, "交付完整性", 676, 420, 180);
-  const deliverables = ["Apache-2.0 license", "锁定 upstream commit", "全量自动化测试", "双远端同步"];
+  label(s, "官方总维度", 676, 420, 180);
+  const deliverables = ["完整度 40%", "技术深度 30%", "AI 效率 20%", "工程质量 10%"];
   deliverables.forEach((item, i) => {
     shape(s, "ellipse", 680 + (i % 2) * 250, 476 + Math.floor(i / 2) * 58, 12, 12, C.green);
     text(s, item, 702 + (i % 2) * 250, 468 + Math.floor(i / 2) * 58, 216, 28, 15, C.ink, true);
   });
+  text(s, "详细 20+25+15+20+20 证据矩阵：docs/scoring-evidence.md", 676, 584, 504, 24, 14, "#56718D", true);
 }
 
 function conclusion(p) {
@@ -418,7 +423,7 @@ function conclusion(p) {
   });
   darkPanel(s, 72, 512, 1132, 88, { fill: "#071A3D/93" });
   text(s, "验证边界", 96, 532, 110, 28, 17, C.gold, true);
-  text(s, `${uncovered.join("、")} 尚未命中；注入故障仅证明环境检错能力，不代表真实 RTL 缺陷。`,
+  text(s, `${coverageBoundary} 注入故障仅证明环境检错能力，不代表真实 RTL 缺陷。`,
     218, 528, 956, 38, 16, C.white, true);
   text(s, "谢谢", 72, 640, 180, 32, 22, C.white, true);
   text(s, "CacheSage-UC · 可度量、可复核、可复现", 760, 642, 444, 24, 15, C.pale, false, "right");

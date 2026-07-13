@@ -20,7 +20,7 @@ if str(SRC) not in sys.path:
 REPORT_STEM = "CacheSage-UC-verification-report"
 REPORT_TITLE = "CacheSage-UC：面向 NutShell Cache 的 UCAgent 辅助自动化验证报告"
 GITLINK_URL = "https://gitlink.org.cn/python123/cachesage-uc"
-GITHUB_DISPLAY = "github.com/python123-ops/CacheSage-UC"
+GITHUB_URL = "https://github.com/python123-ops/CacheSage-UC-NutShell-Cache-AI-HIL-"
 AUTHOR_LINE = "python123"
 
 
@@ -152,6 +152,8 @@ def render_markdown(data: ReportData, report_date: str) -> str:
     rtl_code_coverage_summary = summarize_rtl_code_coverage(data.rtl_functional)
     rtl_coverage = data.rtl_functional["coverage"]
     rtl_scoreboard = data.rtl_functional["scoreboard"]
+    rtl_transactions = data.rtl_functional["run"]["transactions"]
+    backpressure = data.rtl_functional["backpressure"]
     dependency_note = data.smoke.get("dependency_note") or (
         "Linux 环境依赖齐全；上游 make gen_dut 与 make test smoke 已通过。"
         if smoke_complete
@@ -171,13 +173,13 @@ def render_markdown(data: ReportData, report_date: str) -> str:
 
 GitLink：{GITLINK_URL}
 
-GitHub：{GITHUB_DISPLAY}
+GitHub：{GITHUB_URL}
 
 提交基线：仓库当前默认分支 HEAD
 
 ## 摘要
 
-CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了 Python 验证核心和真实 RTL 回归两条可复现路径。Python harness 在 seed 11 上达到 `{data.coverage_covered}/{data.coverage_total}`；Toffee 驱动 Picker DUT 完成 421 条事务，RTL 功能覆盖率为 `{rtl_coverage['covered']}/{rtl_coverage['total']}`，独立 Scoreboard 完成 `{rtl_scoreboard['comparisons']}` 次比较且无失败；Verilator 代码覆盖率为 `898/1454（61.00%）`。报告同时保留 5 类 injected fault 和 UCAgent 人工复核记录，不把故障注入结果写成真实 NutShell RTL 缺陷。
+CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了 Python 验证核心和真实 RTL 回归两条可复现路径。Python harness 在 seed 11 上达到 `{data.coverage_covered}/{data.coverage_total}`；Toffee 驱动 Picker DUT 完成 {rtl_transactions} 条事务，RTL 功能覆盖率为 `{rtl_coverage['covered']}/{rtl_coverage['total']}`，独立 Scoreboard 完成 `{rtl_scoreboard['comparisons']}` 次比较且无失败；Verilator 代码覆盖率为 `{rtl_code_coverage_summary}`。报告同时保留 5 类 injected fault 和 UCAgent 人工复核记录，不把故障注入结果写成真实 NutShell RTL 缺陷。
 
 关键词：UCAgent；NutShell Cache；Scoreboard；约束随机；故障注入；覆盖率
 
@@ -189,15 +191,27 @@ CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了 Python 验证核�
 | 验证报告 | `reports/initial-verification-report.md` 与本 PDF | 已整理 |
 | 约束细化 | 12 个场景、23 个 coverpoint、same-set pressure 与 mask matrix | 已实现 |
 | 架构重构 | `src/cachesage_uc/adapters/` 对齐 Picker/Toffee 风格接口 | 已建立边界 |
-| 真实 RTL 回归 | `integration/nutshell/`、`scripts/run_rtl_regression.py` | 34/36，94.44% |
+| 真实 RTL 回归 | `integration/nutshell/`、`scripts/run_rtl_regression.py` | {rtl_coverage['covered']}/{rtl_coverage['total']}，{rtl_coverage['percent']:.2f}% |
 | 人工复核 | `review_journal.jsonl`、`docs/ucagent-collaboration.md` | 10 条可追溯记录 |
 | 故障注入 | 5 类 injected fault artifact | 已检出 |
+
+## 官方评分证据矩阵
+
+| 官方总维度 | 权重 | 主要证据 |
+| --- | ---: | --- |
+| 项目完整度 | 40% | `src/`、`integration/`、`tests/`、`reports/`、Apache-2.0 `LICENSE` |
+| 技术深度 | 30% | 独立 Scoreboard、36 点真实 DUT 覆盖、背压握手和故障注入 |
+| AI 使用效率 | 20% | `review_journal.jsonl` 与人工修正对比，重建/同期记录分开 |
+| 工程质量 | 10% | 上游锁定、portable/full 验收、Python 3.8/当前版本 CI |
+
+详细 100 分细项按 `20（基础环境）+25（人工介入）+15（功能覆盖）+20（协作过程）+20（工程复现）` 对应到 `docs/scoring-evidence.md`。该矩阵只帮助定位证据，不自行承诺评委给出 100 分。
 
 ## 覆盖率与事件摘要
 
 - Python harness 覆盖率：`{data.coverage_covered}/{data.coverage_total}`，`{data.coverage_percent:.2f}%`。
-- RTL 功能覆盖率：`{rtl_coverage['covered']}/{rtl_coverage['total']}`，`{rtl_coverage['percent']:.2f}%`；421 条真实 DUT 事务。
+- RTL 功能覆盖率：`{rtl_coverage['covered']}/{rtl_coverage['total']}`，`{rtl_coverage['percent']:.2f}%`；{rtl_transactions} 条真实 DUT 事务。
 - RTL Scoreboard：`{rtl_scoreboard['comparisons']}` 次比较，`{len(rtl_scoreboard['failures'])}` 个失败。
+- 背压握手：输入等待 `{backpressure['input_wait_cycles']}` 周期，响应等待 `{backpressure['response_wait_cycles']}` 周期；请求/响应 payload 稳定，8 条响应按序进入 Scoreboard。
 - 执行规模：seed 11，{data.transaction_count} 个 transaction。
 - 事件计数：{event_summary}。
 - Picker/Toffee/NutShell smoke：{smoke_summary}
@@ -220,7 +234,7 @@ CacheSage-UC 面向 UCAgent NutShell Cache 赛题，构建了 Python 验证核�
 
 {dependency_note}
 
-Python harness `23/23`、RTL 功能覆盖 `34/36` 和 RTL 代码覆盖 `898/1454` 分别记录，不互相替代。
+Python harness `{data.coverage_covered}/{data.coverage_total}`、RTL 功能覆盖 `{rtl_coverage['covered']}/{rtl_coverage['total']}` 和 {rtl_code_coverage_summary} 分别记录，不互相替代。
 
 本报告将 Python harness 结果与 RTL/Toffee 结果分开记录。上述 fault artifact 仅说明 injected fault 能被 harness 和 scoreboard 检出，不代表真实 NutShell RTL 存在对应缺陷。
 """
@@ -241,28 +255,32 @@ def render_tex(data: ReportData, report_date: str) -> str:
     rtl_code_coverage_summary = summarize_rtl_code_coverage(data.rtl_functional)
     rtl_coverage = data.rtl_functional["coverage"]
     rtl_scoreboard = data.rtl_functional["scoreboard"]
+    rtl_transactions = data.rtl_functional["run"]["transactions"]
+    backpressure = data.rtl_functional["backpressure"]
     dependency_note = data.smoke.get("dependency_note") or (
         "Linux 环境依赖齐全；上游 make gen_dut 与 make test smoke 已通过。"
         if smoke_complete
         else "未记录"
     )
     smoke_summary = (
-        f"Linux 环境已完成上游 \\code{{make gen\\_dut}} 与 \\code{{make test}} smoke；{latex_escape(rtl_artifacts_summary)}；{latex_escape(rtl_code_coverage_summary)}。"
+        f"Linux 环境已完成上游 {latex_command('make gen_dut')} 与 {latex_command('make test')} smoke；{latex_escape(rtl_artifacts_summary)}；{latex_escape(rtl_code_coverage_summary)}。"
         if smoke_complete
         else "当前只记录上游 layout inspection、Toffee-style request preview 与 Python harness 结果。"
     )
     smoke_limit = (
-        "当前 Linux 环境已完成真实 DUT 三 seed 回归。剩余未覆盖项为输入与响应 backpressure；报告保留这两个缺口，不通过人工标记补齐。大型 FST 与 coverage.dat 留在本地忽略目录，仓库保存可复核摘要。"
+        f"当前 Linux 环境已完成真实 DUT 三 seed 回归和握手背压场景。输入等待 {backpressure['input_wait_cycles']} 周期、响应等待 {backpressure['response_wait_cycles']} 周期，payload 稳定且响应按序；大型 FST 与 coverage.dat 留在本地忽略目录，仓库保存可复核摘要。"
         if smoke_complete
         else "本报告的主要限制是 RTL/Toffee 覆盖率未实测。该限制来自本机缺失 Picker、Toffee、Toffee-Test 或 make，不来自 Python harness 自身无法运行。为保持证据可信度，报告将这部分写成集成环境记录，并保留 \\code{rtl_toffee_measured_coverage: null} 的机器可读字段。"
     )
     smoke_evidence_item = (
-        "smoke 记录：\\code{reports/nutshell-smoke.json} 记录上游目录、\\code{make gen\\_dut}、\\code{make test}、RTL artifact manifest 与 RTL code coverage 状态。"
+        "smoke 记录：\\code{reports/nutshell-smoke.json} 记录上游目录、"
+        f"{latex_command('make gen_dut')}、{latex_command('make test')}、"
+        "RTL artifact manifest 与 RTL code coverage 状态。"
         if smoke_complete
         else "smoke 记录：\\code{reports/nutshell-smoke.json} 记录上游目录已就绪，同时明确本机缺失 make、picker、toffee 与 toffee-test。"
     )
     smoke_conclusion = (
-        f"当前 Linux 回归已驱动真实 Picker DUT 完成 421 条事务，RTL 功能覆盖率为 {rtl_coverage['covered']}/{rtl_coverage['total']}（{rtl_coverage['percent']:.2f}\\%），Scoreboard {rtl_scoreboard['comparisons']} 次比较且无失败；Verilator 代码覆盖率为 898/1454（61.00\\%）。"
+        f"当前 Linux 回归已驱动真实 Picker DUT 完成 {rtl_transactions} 条事务，RTL 功能覆盖率为 {rtl_coverage['covered']}/{rtl_coverage['total']}（{rtl_coverage['percent']:.2f}\\%），Scoreboard {rtl_scoreboard['comparisons']} 次比较且无失败；{latex_escape(rtl_code_coverage_summary)}。"
         if smoke_complete
         else "后续若在 Linux 或完整 EDA 环境中安装 Picker、Toffee、Toffee-Test 与 make，可将同一场景矩阵接入 Picker-generated DUT，并把 RTL/Toffee measured coverage、waveform 片段和真实 RTL smoke 结果追加到报告中。当前版本坚持证据边界，不把尚未实测的 RTL 结果写成已完成结论。"
     )
@@ -310,7 +328,7 @@ def render_tex(data: ReportData, report_date: str) -> str:
 \begin{{tabular}}{{rl}}
 赛题方向： & UCAgent / NutShell Cache 自动化验证 \\
 GitLink 仓库： & \href{{{GITLINK_URL}}}{{gitlink.org.cn/python123/cachesage-uc}} \\
-GitHub 仓库： & github.com/python123-ops/CacheSage-UC \\
+GitHub 仓库： & \href{{{GITHUB_URL}}}{{python123-ops/CacheSage-UC-NutShell-Cache-AI-HIL-}} \\
 报告身份： & {latex_escape(AUTHOR_LINE)} \\
 提交基线： & 仓库当前默认分支 HEAD \\
 报告日期： & {latex_escape(report_date)} \\
@@ -328,7 +346,7 @@ GitHub 仓库： & github.com/python123-ops/CacheSage-UC \\
 \tightsection{{摘要}}
 CacheSage-UC 面向 UCAgent NutShell Cache 赛题，围绕 cache 验证中的数据一致性、事件顺序、replacement、byte mask、stall 与 reset 等高风险路径，构建了一套可复现的验证原型。仓库包含 Generator/CRV、Reference Model、Scoreboard、Coverage Collector、Fault Injection、Review Journal 与 Linux smoke 证据。当前 Python harness 在 seed 11、{data.transaction_count} 个 transaction 上达到 \textbf{{{data.coverage_covered}/{data.coverage_total}}}，即 \textbf{{{data.coverage_percent:.2f}\%}} 功能覆盖率，并对 5 类 injected fault 给出确定性检出证据。
 
-真实 RTL 回归采用定向场景和 seed 11、29、73，共执行 421 条 DUT 事务；36 个功能覆盖点命中 34 个，Scoreboard 完成 199 次读数据比较且无失败。Verilator coverage.dat 经工具解析为 898/1454（61.00\%）。所有 fault artifact 均为 injected fault 检出证据，不代表真实 NutShell RTL 已被确认存在缺陷。
+真实 RTL 回归采用定向场景、seed 11、29、73 和握手背压场景，共执行 {rtl_transactions} 条 DUT 事务；36 个功能覆盖点全部命中，Scoreboard 完成 {rtl_scoreboard['comparisons']} 次读数据比较且无失败。输入等待 {backpressure['input_wait_cycles']} 周期、响应等待 {backpressure['response_wait_cycles']} 周期，payload 稳定且响应按序。{latex_escape(rtl_code_coverage_summary)}。所有 fault artifact 均为 injected fault 检出证据，不代表真实 NutShell RTL 已被确认存在缺陷。
 
 \noindent\textbf{{关键词：}}UCAgent；NutShell Cache；Scoreboard；约束随机；故障注入；覆盖率
 
@@ -408,9 +426,10 @@ S12 & 事件级 replacement 审计，检查数据匹配时的 policy drift。 & 
 transaction 数 & {data.transaction_count} \\
 Python harness 覆盖率 & \textbf{{{data.coverage_covered}/{data.coverage_total}}}，\textbf{{{data.coverage_percent:.2f}\%}} \\
 覆盖点范围 & read/write hit、miss/refill、dirty/clean eviction、replacement、mask、stall、reset、boundary address、multi-set traffic \\
-RTL 功能覆盖率 & \textbf{{{rtl_coverage['covered']}/{rtl_coverage['total']}}}，\textbf{{{rtl_coverage['percent']:.2f}\%}}；421 条真实 DUT 事务 \\
+RTL 功能覆盖率 & \textbf{{{rtl_coverage['covered']}/{rtl_coverage['total']}}}，\textbf{{{rtl_coverage['percent']:.2f}\%}}；{rtl_transactions} 条真实 DUT 事务 \\
 RTL Scoreboard & {rtl_scoreboard['comparisons']} 次比较，{len(rtl_scoreboard['failures'])} 个失败 \\
-RTL 代码覆盖率 & 898/1454，61.00\%；与功能覆盖率分栏记录 \\
+RTL 背压握手 & 输入等待 {backpressure['input_wait_cycles']} 周期；响应等待 {backpressure['response_wait_cycles']} 周期；payload 稳定且响应按序 \\
+RTL 代码覆盖率 & {latex_escape(rtl_code_coverage_summary)}；与功能覆盖率分栏记录 \\
 \bottomrule
 \end{{tabularx}}
 
@@ -435,7 +454,9 @@ RTL 代码覆盖率 & 898/1454，61.00\%；与功能覆盖率分栏记录 \\
 \bottomrule
 \end{{tabularx}}
 
-该矩阵只用于说明证据如何被评审复查，不把项目包装成已经完成真实 RTL 端到端实测。报告中的每个结论都对应到仓库文件、JSON artifact 或可执行命令。
+该矩阵只用于说明证据如何被评审复查，不自行宣称评委必然给出满分。报告中的每个结论都对应到仓库文件、JSON artifact 或可执行命令。
+
+官方总维度为完整度 40\%、技术深度 30\%、AI 使用效率 20\%、工程质量 10\%；详细细项为 20（基础环境）+25（人工介入）+15（功能覆盖）+20（协作过程）+20（工程复现）。逐项路径见 \texttt{{docs/scoring-evidence.md}}。
 
 \tightsection{{验证数据完整性}}
 当前样例 run 的 transaction 规模为 {data.transaction_count}，事件计数覆盖 miss、refill、write、hit、eviction、dirty eviction、writeback、stall hold 与 reset window。该结果说明 stimulus 不只是普通顺序读写，而是覆盖了 cache data path 与 control path 的组合。特别是 dirty eviction 与 writeback 同时出现，使 scoreboard 能检查 victim 数据是否在 replacement 前写回；stall hold 与 reset window 的出现，则为 handshake stability 与 reset recovery 提供了可执行证据。
@@ -490,38 +511,38 @@ RTL code coverage & {latex_escape(rtl_code_coverage_summary)} \\
 \bottomrule
 \end{{tabularx}}
 
-报告把 Python harness、真实 DUT 功能覆盖率和 Verilator 代码覆盖率分栏记录。未命中的 input/response backpressure 明确保留为覆盖缺口。
+报告把 Python harness、真实 DUT 功能覆盖率和 Verilator 代码覆盖率分栏记录。input/response backpressure 只在真实 `valid/ready` 等待、payload 稳定和响应顺序均得到证明后计入覆盖。
 
 \tightsection{{Linux Smoke 实证记录}}
-本次 Linux smoke 运行在 Ubuntu 24.04 WSL2 环境中，系统依赖包含 make、CMake、GCC/G++、Verilator、SWIG 与 Python venv。Picker 安装后 \code{{picker --check}} 显示 C++ 与 Python 支持可用；Python venv 中固定 \code{{pytoffee==0.3.0}} 与 \code{{toffee-test==0.3.0}}，避免 PyPI 最新包之间的接口漂移。
+本次 Linux smoke 运行在 Ubuntu 24.04 WSL2 环境中，系统依赖包含 make、CMake、GCC/G++、Verilator、SWIG 与 Python venv。Picker 安装后 {latex_command('picker --check')} 显示 C++ 与 Python 支持可用；Python venv 中固定 \code{{pytoffee==0.3.0}} 与 \code{{toffee-test==0.3.0}}，避免 PyPI 最新包之间的接口漂移。
 
-上游 Example-NutShellCache 的 \code{{make gen\_dut}} 返回 0，完成 Picker 生成 Python DUT 与 Verilator build；\code{{make test}} 返回 0，pytest 记录为 \code{{test/test\_smoke.py::test\_smoke PASSED}}。该证据说明基础环境构建已经从准备态变为可执行 smoke。脚本同时扫描波形、generated DUT 与 coverage candidate 文件，只提交 manifest，不提交大型波形二进制。
+上游 Example-NutShellCache 的 {latex_command('make gen_dut')} 返回 0，完成 Picker 生成 Python DUT 与 Verilator build；{latex_command('make test')} 返回 0，pytest 记录为 {latex_command('test/test_smoke.py::test_smoke PASSED')}。该证据说明基础环境构建已经从准备态变为可执行 smoke。脚本同时扫描波形、generated DUT 与 coverage candidate 文件，只提交 manifest，不提交大型波形二进制。
 
 \tightsection{{限制与补充条件}}
 {smoke_limit}
 
-回归入口为 \code{{python scripts/run\_rtl\_regression.py}}。脚本驱动 Picker-generated DUT，保存逐覆盖点事件来源、Scoreboard 失败明细、FST 路径和 Verilator coverage 摘要。
+回归入口为 {latex_command('python scripts/run_rtl_regression.py')}。脚本驱动 Picker-generated DUT，保存逐覆盖点事件来源、Scoreboard 失败明细、FST 路径和 Verilator coverage 摘要。
 
 \tightsection{{工程复现性}}
 \begin{{tabularx}}{{\linewidth}}{{P{{0.22\linewidth}}Y}}
 \toprule
 复现项 & 命令或材料 \\
 \midrule
-安装 & \texttt{{python -m pip install -e .}} \\
-测试 & \code{{python -m unittest discover -s tests -v}} \\
-编译检查 & \code{{python -m compileall -q src tests scripts}} \\
-计划导出 & \code{{python -m cachesage_uc.cli plan}} \\
-覆盖率样例 & \code{{python -m cachesage_uc.cli run --seed 11 --count 96 --output reports/sample-run-seed11.json}} \\
-真实 RTL 回归 & \code{{python scripts/run\_rtl\_regression.py}} \\
-报告构建 & \code{{python scripts/build_verification_pdf.py}} \\
+安装 & {latex_command('python -m pip install -e .')} \\
+测试 & {latex_command('python -m unittest discover -s tests -v')} \\
+编译检查 & {latex_command('python -m compileall -q src tests scripts')} \\
+计划导出 & {latex_command('python -m cachesage_uc.cli plan')} \\
+覆盖率样例 & {latex_command('python -m cachesage_uc.cli run --seed 11 --count 96 --output reports/sample-run-seed11.json')} \\
+真实 RTL 回归 & {latex_command('python scripts/run_rtl_regression.py')} \\
+报告构建 & {latex_command('python scripts/build_verification_pdf.py')} \\
 许可证 & Apache License 2.0 \\
 \bottomrule
 \end{{tabularx}}
 
 \tightsection{{执行证据摘要}}
 \begin{{enumerate}}
-\item 基础测试：\code{{python -m unittest discover -s tests -v}}，覆盖 CLI、证据模型、公开材料约束、上游适配和 cache verification core。
-\item 编译检查：\code{{python -m compileall -q src tests scripts}}，用于确认源码、测试和脚本均可被 Python 编译器解析。
+\item 基础测试：{latex_command('python -m unittest discover -s tests -v')}，覆盖 CLI、证据模型、公开材料约束、上游适配和 cache verification core。
+\item 编译检查：{latex_command('python -m compileall -q src tests scripts')}，用于确认源码、测试和脚本均可被 Python 编译器解析。
 \item 覆盖率样例：\code{{reports/sample-run-seed11.json}} 记录 seed、transaction count、covered points 与 event counts。
 \item {smoke_evidence_item}
 \item 报告构建：\code{{scripts/build_verification_pdf.py}} 从 JSON/JSONL 证据生成 Markdown、LaTeX 与 PDF，减少手工维护偏差。
@@ -542,7 +563,7 @@ CacheSage-UC 当前已经形成面向 NutShell Cache 的可复现验证仓库和
 \item \texttt{{docs/scoreboard-design.md}}：Scoreboard invariant 与 Toffee 映射。
 \item \texttt{{docs/fault-injection.md}}：5 类 injected fault 的检测目标。
 \item \texttt{{reports/sample-run-seed11.json}}：23/23 覆盖率样例。
-\item \texttt{{reports/rtl-functional-coverage.json}}：真实 DUT 34/36 功能覆盖率、逐点来源和 Scoreboard 明细。
+\item \texttt{{reports/rtl-functional-coverage.json}}：真实 DUT {rtl_coverage['covered']}/{rtl_coverage['total']} 功能覆盖率、背压握手、逐点来源和 Scoreboard 明细。
 \item \texttt{{docs/ucagent-collaboration.md}}：UCAgent 草案、人工复核、代码修正和指标变化。
 \item \texttt{{reports/fault-*.json}}：故障注入 artifact。
 \item \texttt{{review\_journal.jsonl}}：prompt、草案、复核发现、修正与证据链接。
@@ -663,6 +684,10 @@ def latex_escape(value: object) -> str:
 
 def latex_identifier(value: object) -> str:
     return latex_escape(value).replace(r"\_", r"\_\allowbreak{}")
+
+
+def latex_command(value: object) -> str:
+    return r"\texttt{" + latex_escape(value).replace(" ", r"\ ") + "}"
 
 
 if __name__ == "__main__":

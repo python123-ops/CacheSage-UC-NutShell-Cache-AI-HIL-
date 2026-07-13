@@ -2,7 +2,7 @@
 
 CacheSage-UC 面向 UCAgent NutShell Cache 验证任务，目标是把 cache 验证从“随机跑一批读写”推进到可复盘的工程流程：场景先写清楚，事务能复现，Scoreboard 有明确不变量，报告把 Python harness、RTL 功能覆盖率和 RTL 代码覆盖率分开记录。
 
-当前仓库包含可运行的 Python 验证核心、真实 NutShell Cache 的 Toffee 回归、两套独立覆盖模型、5 类确定性故障注入，以及可追溯的人工复核记录。项目不把 injected fault 写成真实 NutShell RTL 缺陷；本轮真实 DUT 回归的 199 次读数据比较均通过。
+当前仓库包含可运行的 Python 验证核心、真实 NutShell Cache 的 Toffee 回归、两套独立覆盖模型、5 类确定性故障注入，以及可追溯的人工复核记录。项目不把 injected fault 写成真实 NutShell RTL 缺陷；本轮真实 DUT 回归的 207 次读数据比较均通过。
 
 ## 当前交付状态
 
@@ -12,11 +12,12 @@ CacheSage-UC 面向 UCAgent NutShell Cache 验证任务，目标是把 cache 验
 | Python 功能覆盖率 | `23/23（100%）` | `reports/sample-run-seed11.json` |
 | 故障注入 | 5 个确定性模式 | `drop_dirty_writeback`、`ignore_write_mask`、`stuck_replacement`、`refill_shift`、`unstable_under_stall` |
 | NutShell 上游对齐 | 锁定版本，不 vendoring | `upstream.lock.json`、`scripts/fetch_upstream_example.py` |
-| Picker/Toffee 回归 | Linux 实测通过 | 定向场景 + seed `11/29/73`，共 421 条真实 DUT 事务 |
-| RTL 功能覆盖率 | `34/36（94.44%）` | `reports/rtl-functional-coverage.json`，199 次 Scoreboard 比较、0 失败 |
+| Picker/Toffee 回归 | Linux 实测通过 | 定向场景 + seed `11/29/73` + 背压握手，共 437 条真实 DUT 事务 |
+| RTL 功能覆盖率 | `36/36（100.00%）` | `reports/rtl-functional-coverage.json`，207 次 Scoreboard 比较、0 失败 |
+| 背压握手 | 输入等待 2 周期、响应等待 3 周期 | 请求/响应 payload 稳定，8 条响应按序排空 |
 | RTL 代码覆盖率 | `898/1454（61.00%）` | Verilator `coverage.dat` 经 `verilator_coverage --annotate` 解析 |
 | RTL 运行产物 | 本地保留 | FST 波形 219100 bytes，coverage.dat 3621619 bytes；仓库提交摘要，不提交大型二进制 |
-| 答辩材料 | 12 页学术答辩稿 | `reports/CacheSage-UC-defense-demo-NSFC.pptx`，由仓库证据动态生成 |
+| 答辩材料 | 12 页正式答辩稿 | `reports/CacheSage-UC-defense-demo.pptx`，由仓库证据动态生成 |
 
 ## 验证能力
 
@@ -32,12 +33,7 @@ CacheSage-UC 面向 UCAgent NutShell Cache 验证任务，目标是把 cache 验
 
 ```powershell
 python -m pip install -e .
-python -m unittest discover -s tests -v
-python -m compileall -q src tests scripts
-python -m cachesage_uc.cli plan
-python -m cachesage_uc.cli run --seed 11 --count 96 --output reports/sample-run-seed11.json
-python scripts/generate_report.py --output reports/initial-verification-report.md
-python scripts/build_defense_ppt.py
+python scripts/verify_acceptance.py --mode portable
 ```
 
 基础验证层只使用 Python 标准库。真实 RTL 回归在 WSL Ubuntu 24.04 中使用 Picker、Toffee、Toffee-Test、Verilator 和 make。
@@ -49,9 +45,14 @@ python scripts/fetch_upstream_example.py --lock upstream.lock.json --dest third_
 python scripts/fetch_upstream_example.py --lock upstream.lock.json --dest third_party/Example-NutShellCache
 python scripts/run_nutshell_smoke.py --upstream third_party/Example-NutShellCache
 python scripts/run_rtl_regression.py
+python scripts/verify_acceptance.py --mode full
 ```
 
 如果本机没有上游目录或缺少 Picker/Toffee 相关依赖，`run_nutshell_smoke.py` 会写出 machine-readable 状态文件，并保持 Python harness 回归可独立复现。
+
+评分口径和证据链接集中在 `docs/scoring-evidence.md`。该矩阵用于定位材料，不自行宣称评委必然给出 100 分。比赛官网显示赛期已于 2026-07-11 结束；当前更新属于赛后仓库完善，不表示评审系统已重新接收。
+
+仓库镜像：[GitLink](https://gitlink.org.cn/python123/cachesage-uc) · [GitHub](https://github.com/python123-ops/CacheSage-UC-NutShell-Cache-AI-HIL-)
 
 ## 仓库结构
 

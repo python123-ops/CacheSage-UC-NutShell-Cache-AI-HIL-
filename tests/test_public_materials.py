@@ -22,7 +22,6 @@ BANNED_PUBLIC_PHRASES = [
     "AI blind spot",
     "AI defect",
     "AI-generated report",
-    "AI-HIL",
     "中文简介",
     "Next Integration",
     "Next Regression",

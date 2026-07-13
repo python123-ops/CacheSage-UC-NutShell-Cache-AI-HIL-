@@ -52,10 +52,10 @@ CacheSage-UC 固定分成四类数据：
 | Python harness measured coverage | `VerificationRunner` 在 reference/candidate cache model 上测得的数据 |
 | RTL smoke artifact | Picker-generated DUT 运行后产生的 waveform、generated DUT 和 coverage candidate manifest |
 | RTL code coverage | Verilator/Picker coverage 数据可解析后导出的 smoke-level code coverage |
-| RTL functional coverage | Toffee 驱动真实 Picker DUT 后，由响应、memory、victim 和 probe 事件命中的 36 点模型；当前为 `34/36（94.44%）` |
+| RTL functional coverage | Toffee 驱动真实 Picker DUT 后，由响应、memory、victim、probe 与握手事件命中的 36 点模型；当前为 `36/36（100.00%）` |
 
-RTL 回归使用定向场景和 seed `11/29/73`，共执行 421 条真实 DUT 事务。独立 Scoreboard 完成 199 次读数据比较且无失败；未命中的输入和响应 backpressure 保留为未覆盖。
+RTL 回归使用定向场景、seed `11/29/73` 和真实握手背压场景，共执行 437 条真实 DUT 事务。独立 Scoreboard 完成 207 次读数据比较且无失败；输入请求等待 2 周期，响应等待 3 周期，stall 期间 payload 保持稳定并按序排空。
 
-Verilator `coverage.dat` 经 `verilator_coverage --annotate` 得到 `898/1454（61.00%）`。该数字是 RTL 代码活动覆盖率，不与 `34/36` 功能覆盖率合并。
+Verilator `coverage.dat` 经 `verilator_coverage --annotate` 得到 `898/1454（61.00%）`。该数字是 RTL 代码活动覆盖率，不与 `36/36` 功能覆盖率合并。
 
 这个拆分让报告保持可复核：没有实测来源的数据不写成实测结论。

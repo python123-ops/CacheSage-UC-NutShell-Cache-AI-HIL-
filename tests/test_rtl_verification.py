@@ -84,6 +84,91 @@ class _FakeSimpleBusAgent:
         return self.responses.pop(0)
 
 
+class _Signal:
+    def __init__(self, value=0):
+        self.value = value
+
+
+class _Channel:
+    def __init__(self, fields):
+        for name in fields:
+            setattr(self, name, _Signal())
+
+    def assign(self, values):
+        for name, value in values.items():
+            getattr(self, name).value = value
+
+    def as_dict(self):
+        return {
+            name: signal.value
+            for name, signal in vars(self).items()
+            if isinstance(signal, _Signal)
+        }
+
+
+class _BackpressureBundle:
+    """One-entry response queue that exposes both sides of backpressure."""
+
+    def __init__(self):
+        self.req = _Channel(("ready", "valid", "addr", "size", "cmd", "wmask", "wdata"))
+        self.rsp = _Channel(("ready", "valid", "cmd", "rdata"))
+        self.req.ready.value = 1
+        self.accepted_payloads = []
+        self.stalled_request_payloads = []
+        self.stalled_response_payloads = []
+        self._pending = []
+
+    async def step(self):
+        if self.req.valid.value and not self.req.ready.value:
+            self.stalled_request_payloads.append(self.req.as_dict())
+        if self.rsp.valid.value and not self.rsp.ready.value:
+            self.stalled_response_payloads.append(self.rsp.as_dict())
+
+        if self.rsp.valid.value and self.rsp.ready.value:
+            self._pending.pop(0)
+        if self.req.valid.value and self.req.ready.value:
+            payload = self.req.as_dict()
+            self.accepted_payloads.append(payload)
+            self._pending.append({"cmd": payload["cmd"], "rdata": payload["addr"] + 0x100})
+
+        self.req.ready.value = int(not self._pending)
+        if self._pending:
+            self.rsp.valid.value = 1
+            self.rsp.cmd.value = self._pending[0]["cmd"]
+            self.rsp.rdata.value = self._pending[0]["rdata"]
+        else:
+            self.rsp.valid.value = 0
+
+
+class _BackpressureAgent:
+    def __init__(self, bundle=None):
+        self.bundle = bundle or _BackpressureBundle()
+
+
+class _ReadyGatedBackpressureBundle(_BackpressureBundle):
+    """Matches CacheStage3: a response reaches the output only while ready is high."""
+
+    async def step(self):
+        if self.req.valid.value and not self.req.ready.value:
+            self.stalled_request_payloads.append(self.req.as_dict())
+        if self.rsp.valid.value and not self.rsp.ready.value:
+            self.stalled_response_payloads.append(self.rsp.as_dict())
+
+        if self.rsp.valid.value and self.rsp.ready.value:
+            self._pending.pop(0)
+            self.rsp.valid.value = 0
+        if self.req.valid.value and self.req.ready.value:
+            payload = self.req.as_dict()
+            self.accepted_payloads.append(payload)
+            self._pending.append({"cmd": payload["cmd"], "rdata": payload["addr"] + 0x100})
+
+        self.req.ready.value = int(not self._pending)
+        if self._pending and not self.rsp.valid.value and self.rsp.ready.value:
+            self.rsp.valid.value = 1
+            self.rsp.cmd.value = self._pending[0]["cmd"]
+            self.rsp.rdata.value = self._pending[0]["rdata"]
+
+
 class NutShellRequestDriverTests(unittest.IsolatedAsyncioTestCase):
     async def test_write_passes_size_mask_and_data_in_protocol_order(self):
         from cachesage_uc.adapters.nutshell_runtime import NutShellRequestDriver
@@ -98,6 +183,74 @@ class NutShellRequestDriverTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(agent.requests, [(0x1000, 7, 1, 0x5A, 0x1122334455667788)])
         self.assertEqual(response["rdata"], 0x1234)
 
+    async def test_burst_holds_payloads_stable_and_drains_responses_in_order(self):
+        from cachesage_uc.adapters.nutshell_runtime import NutShellRequestDriver
+        from cachesage_uc.rtl_verification import RtlTransaction
+
+        agent = _BackpressureAgent()
+        driver = NutShellRequestDriver(agent, read_cmd=0, write_cmd=1)
+        transactions = [RtlTransaction.read(address) for address in (0x1000, 0x1008, 0x1010)]
+
+        trace = await driver.execute_backpressure_burst(
+            transactions,
+            minimum_response_wait_cycles=2,
+            timeout_cycles=40,
+        )
+
+        self.assertGreater(trace.input_wait_cycles, 0)
+        self.assertGreaterEqual(trace.response_wait_cycles, 2)
+        self.assertTrue(trace.request_payload_stable)
+        self.assertTrue(trace.response_payload_stable)
+        self.assertTrue(trace.ordered_responses)
+        self.assertEqual(
+            [response["rdata"] for response in trace.responses],
+            [0x1100, 0x1108, 0x1110],
+        )
+        self.assertGreaterEqual(len(agent.bundle.stalled_request_payloads), 2)
+        self.assertEqual(
+            agent.bundle.stalled_request_payloads[0],
+            agent.bundle.stalled_request_payloads[1],
+        )
+        self.assertTrue(all(item == agent.bundle.stalled_response_payloads[0]
+                            for item in agent.bundle.stalled_response_payloads))
+
+    async def test_burst_allows_ready_gated_stage_to_present_first_response(self):
+        from cachesage_uc.adapters.nutshell_runtime import NutShellRequestDriver
+        from cachesage_uc.rtl_verification import RtlTransaction
+
+        agent = _BackpressureAgent(_ReadyGatedBackpressureBundle())
+        driver = NutShellRequestDriver(agent, read_cmd=0, write_cmd=1)
+
+        trace = await driver.execute_backpressure_burst(
+            [RtlTransaction.read(address) for address in (0x2000, 0x2008)],
+            minimum_response_wait_cycles=2,
+            timeout_cycles=40,
+        )
+
+        self.assertGreater(trace.input_wait_cycles, 0)
+        self.assertGreaterEqual(trace.response_wait_cycles, 2)
+        self.assertEqual([item["rdata"] for item in trace.responses], [0x2100, 0x2108])
+
+    async def test_burst_timeout_reports_missing_handshake_evidence(self):
+        from cachesage_uc.adapters.nutshell_runtime import NutShellRequestDriver
+        from cachesage_uc.rtl_verification import RtlTransaction
+
+        bundle = _BackpressureBundle()
+
+        async def never_respond():
+            bundle.req.ready.value = 1
+            bundle.rsp.valid.value = 0
+
+        bundle.step = never_respond
+        driver = NutShellRequestDriver(_BackpressureAgent(bundle), read_cmd=0, write_cmd=1)
+
+        with self.assertRaisesRegex(TimeoutError, "response backpressure"):
+            await driver.execute_backpressure_burst(
+                [RtlTransaction.read(0x1000), RtlTransaction.read(0x1008)],
+                minimum_response_wait_cycles=2,
+                timeout_cycles=4,
+            )
+
 
 class RtlCoverageTests(unittest.TestCase):
     def test_catalog_has_fixed_36_real_dut_points(self):
@@ -109,7 +262,7 @@ class RtlCoverageTests(unittest.TestCase):
         self.assertIn("rtl_probe_hit_dirty", RTL_COVERPOINTS)
         self.assertIn("rtl_idle_empty", RTL_COVERPOINTS)
 
-    def test_report_requires_threshold_and_zero_failures(self):
+    def test_report_distinguishes_threshold_from_complete_closure(self):
         from cachesage_uc.rtl_coverage import RtlCoverageCollector
 
         collector = RtlCoverageCollector()
@@ -121,7 +274,12 @@ class RtlCoverageTests(unittest.TestCase):
         self.assertEqual(report.covered, 33)
         self.assertEqual(report.total, 36)
         self.assertEqual(report.percent, 91.67)
-        self.assertEqual(report.status, "rtl_functional_coverage_complete")
+        self.assertEqual(report.status, "rtl_functional_coverage_threshold_met")
+
+        for point in list(collector.points)[33:]:
+            collector.hit(point, source="unit-test")
+        complete = collector.report(scoreboard_comparisons=384, scoreboard_failures=[])
+        self.assertEqual(complete.status, "rtl_functional_coverage_complete")
 
         failed = collector.report(
             scoreboard_comparisons=384,

@@ -31,9 +31,11 @@
 Target: NutShell Cache, scenario <ID>.
 Observed gap: <uncovered coverpoint or failing seed>.
 Known invariant: <human-approved cache rule>.
+Required evidence: <DUT signal | response | memory event | victim | probe>.
 Allowed change: <stimulus constraint | scoreboard check | documentation>.
 Do not change: <reference model behavior unless the trace proves it is wrong>.
-Return: patch summary, new seed, expected coverage effect, and risks.
+Forbidden claim: <what must not be called complete without measured evidence>.
+Return: root-cause hypothesis, minimal reproduction, patch summary, new seed, expected coverage effect, and risks.
 ```
 
-这个格式能让复核围绕一个具体场景展开，并留下可追踪记录。
+这个格式能让复核围绕一个具体场景展开，并留下可追踪记录。背压场景尤其要求先给出 `valid/ready` 与 payload 的真实信号来源，再讨论覆盖点是否命中；“达到 90%”与“36/36 闭环”使用不同状态词。
